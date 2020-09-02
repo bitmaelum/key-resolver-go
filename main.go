@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var version = "v1.0.0"
+var version = "v0.0.2"
 
 var logo = " ____  _ _   __  __            _\n" +
 	"|  _ \\(_) | |  \\/  |          | |\n" +
@@ -41,7 +41,7 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	return createError("Forbidden", 403), nil
 }
 
-func getIndex(req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
 	// path := strings.Join(strings.Split(req.RequestContext.HTTP.Path, "/")[2:], "^")
 	// req.RequestContext.HTTP.Path = path
 	//
