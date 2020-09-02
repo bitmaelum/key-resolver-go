@@ -1,9 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/key-resolver-go/resolver"
+	"log"
 )
+
+type KeyUpload struct {
+	PublicKey bmcrypto.PubKey `json:"public_key"`
+	Address   string          `json:"address"`
+	Pow       string          `json:"pow"`
+}
 
 func getHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
 	repo := resolver.GetResolveRepository()
@@ -30,7 +39,15 @@ func postHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewa
 	repo := resolver.GetResolveRepository()
 	current, err := repo.Get(hash)
 	if err != nil {
+		log.Print(err)
 		return createError("error while posting record", 500)
+	}
+
+	reqBody := &KeyUpload{}
+	err = json.Unmarshal([]byte(req.Body), reqBody)
+	if err != nil {
+		log.Print(err)
+		return createError("invalid data", 400)
 	}
 
 	var res bool
@@ -39,17 +56,18 @@ func postHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewa
 			return createError("unauthenticated (pow)", 401)
 		}
 
-		res, err = repo.Create("hash", "ServeR-2222", "pubasdfasfdsafdsafakey")
+		res, err = repo.Create(hash, reqBody.Address, reqBody.PublicKey.S, reqBody.Pow)
 	} else {
 		if !validateSignature(req, current) {
 			return createError("unauthenticated", 401)
 		}
 
-		res, err = repo.Update(current, "ServeR=3333", "pubasdfasfdsafdsafakey")
+		res, err = repo.Update(current, reqBody.Address, reqBody.PublicKey.S)
 	}
 
 	if err != nil || res == false {
-		return createError("error while updating: "+err.Error(), 500)
+		log.Print(err)
+		return createError("error while updating: ", 500)
 	}
 
 	// Create returns 201, update returns 200
@@ -64,6 +82,7 @@ func deleteHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGate
 	repo := resolver.GetResolveRepository()
 	current, err := repo.Get(hash)
 	if err != nil {
+		log.Print(err)
 		return createError("error while fetching record", 500)
 	}
 
@@ -77,6 +96,7 @@ func deleteHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGate
 
 	res, err := repo.Delete(current.Hash)
 	if err != nil || res == false {
+		log.Print(err)
 		return createError("error while deleting record", 500)
 	}
 

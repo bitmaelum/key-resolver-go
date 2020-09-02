@@ -11,13 +11,14 @@ type ResolveInfoType struct {
 	Hash   string
 	Server string
 	PubKey string
+	Pow    string
 	Serial int
 }
 
 // Repository to resolve records
 type Repository interface {
 	Get(hash string) (*ResolveInfoType, error)
-	Create(hash, server, publicKey string) (bool, error)
+	Create(hash, server, publicKey, pow string) (bool, error)
 	Update(info *ResolveInfoType, server, publicKey string) (bool, error)
 	Delete(hash string) (bool, error)
 }
