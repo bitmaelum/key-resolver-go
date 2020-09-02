@@ -22,7 +22,7 @@ jobs:
         zip -r ./function.zip key-resolve
     - name: deploy zip to lambda
       run: |
-        aws lambda update-function-code --function-name key-resolve-staging --zip-file fileb://function/function.zip --publish
+        aws lambda update-function-code --function-name key-resolve-staging --zip-file fileb://function.zip --publish
       env:
         AWS_DEFAULT_REGION: eu-west-1
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
