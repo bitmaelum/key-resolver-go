@@ -18,8 +18,8 @@ jobs:
         apt-get install -y zip awscli
     - name: Build and zip
       run: |
-        GOOS=linux go build -o key-resolve .
-        zip -r ./function.zip key-resolve
+        GOOS=linux go build -o main .
+        zip -r ./function.zip main
     - name: deploy zip to lambda
       run: |
         aws lambda update-function-code --function-name key-resolve-staging --zip-file fileb://function.zip --publish
