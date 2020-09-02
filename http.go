@@ -28,10 +28,6 @@ func createOutput(data interface{}, statusCode int) *events.APIGatewayV2HTTPResp
 	}
 }
 
-func validatePow(req events.APIGatewayV2HTTPRequest, current *resolver.ResolveInfoType) bool {
-	return false
-}
-
 // validateSignature
 func validateSignature(req events.APIGatewayV2HTTPRequest, current *resolver.ResolveInfoType) bool {
 	auth := req.Headers["authorization"]

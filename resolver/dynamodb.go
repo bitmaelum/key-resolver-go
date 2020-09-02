@@ -15,7 +15,7 @@ type dynamoDbResolver struct {
 	TableName string
 }
 
-var errNotFound = errors.New("record not found")
+var ErrNotFound = errors.New("record not found")
 
 // Record holds a DynamoDB record
 type Record struct {
@@ -100,14 +100,14 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 
 	// Item not found
 	if result.Item == nil {
-		return nil, nil
+		return nil, ErrNotFound
 	}
 
 	record := Record{}
 	err = dynamodbattribute.UnmarshalMap(result.Item, &record)
 	if err != nil {
 		log.Print(err)
-		return nil, errNotFound
+		return nil, ErrNotFound
 	}
 
 	return &ResolveInfoType{

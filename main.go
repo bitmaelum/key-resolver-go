@@ -1,23 +1,22 @@
 package main
 
 import (
-	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"strings"
 )
 
-var version = "v0.0.2"
+var version = "v0.0.1"
 
-var logo = " ____  _ _   __  __            _\n" +
-	"|  _ \\(_) | |  \\/  |          | |\n" +
-	"| |_) |_| |_| \\  / | __ _  ___| |_   _ _ __ ___\n" +
-	"|  _ <| | __| |\\/| |/ _` |/ _ \\ | | | | '_ ` _ \\\n" +
-	"| |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |\n" +
-	"|____/|_|\\__|_|  |_|\\__,_|\\___|_|\\__,_|_| |_| |_|\n" +
-	"\n" +
-	"   P r i v a c y   i s   y o u r s   a g a i n\n" +
-	"\n"
+var logo = "<pre> ____  _ _   __  __            _<br>" +
+	"|  _ \\(_) | |  \\/  |          | |   " + version + "<br>" +
+	"| |_) |_| |_| \\  / | __ _  ___| |_   _ _ __ ___<br>" +
+	"|  _ <| | __| |\\/| |/ _` |/ _ \\ | | | | '_ ` _ \\<br>" +
+	"| |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |<br>" +
+	"|____/|_|\\__|_|  |_|\\__,_|\\___|_|\\__,_|_| |_| |_|<br>" +
+	"<br>" +
+	"   P r i v a c y   i s   y o u r s   a g a i n<br>" +
+	"</pre>"
 
 // HandleRequest checks the incoming route and calls the correct handler for it
 func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
@@ -42,28 +41,13 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 }
 
 func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	// path := strings.Join(strings.Split(req.RequestContext.HTTP.Path, "/")[2:], "^")
-	// req.RequestContext.HTTP.Path = path
-	//
-	// s, _ := json.MarshalIndent(&req, "", "  ")
-	//
-	// resp := &events.APIGatewayV2HTTPResponse{
-	// 	StatusCode: 200,
-	// 	Headers:    nil,
-	// 	Body:       string(s),
-	// }
-	// return resp
-
-	logo = strings.Replace(logo, "\n", "<br>", -1)
-	body := fmt.Sprintf("<pre>%s\n\nKey resolver %s</pre>", logo, version)
-
 	headers := map[string]string{}
 	headers["Content-Type"] = "text/html"
 
 	resp := &events.APIGatewayV2HTTPResponse{
 		StatusCode: 200,
 		Headers:    headers,
-		Body:       body,
+		Body:       logo,
 	}
 
 	return resp
