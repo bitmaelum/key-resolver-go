@@ -15,7 +15,7 @@ jobs:
     - name: Bootstrap
       run: |
         apt-get update
-        apt-get install -y zip
+        apt-get install -y zip awscli
     - name: Build and zip
       run: |
         GOOS=linux go build -o key-resolve .
