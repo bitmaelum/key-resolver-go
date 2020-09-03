@@ -15,6 +15,7 @@ type dynamoDbResolver struct {
 	TableName string
 }
 
+// ErrNotFound will be returned when a record we are looking for is not found in the db
 var ErrNotFound = errors.New("record not found")
 
 // Record holds a DynamoDB record

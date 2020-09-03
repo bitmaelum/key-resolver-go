@@ -13,6 +13,7 @@ import (
 
 type jsonOut map[string]string
 
+// createError creates an error message json structure
 func createError(msg string, statusCode int) *events.APIGatewayV2HTTPResponse {
 	errBody := jsonOut{
 		"error": msg,
@@ -20,6 +21,7 @@ func createError(msg string, statusCode int) *events.APIGatewayV2HTTPResponse {
 	return createOutput(errBody, statusCode)
 }
 
+// createOutput creates json output for data
 func createOutput(data interface{}, statusCode int) *events.APIGatewayV2HTTPResponse {
 	body, _ := json.MarshalIndent(data, "", "  ")
 
@@ -30,7 +32,7 @@ func createOutput(data interface{}, statusCode int) *events.APIGatewayV2HTTPResp
 	}
 }
 
-// validateSignature
+// validateSignature validates a signature based on the authorization header
 func validateSignature(req events.APIGatewayV2HTTPRequest, current *resolver.ResolveInfoType) bool {
 	log.Printf("req: %#v", req)
 	auth := req.Headers["authorization"]

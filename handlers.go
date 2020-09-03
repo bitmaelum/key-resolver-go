@@ -23,7 +23,7 @@ func getHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2
 		return createError("hash not found", 404)
 	}
 
-	if info != nil {
+	if info == nil {
 		log.Print(err)
 		return createError("hash not found", 404)
 	}
