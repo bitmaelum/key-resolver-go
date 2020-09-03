@@ -58,13 +58,13 @@ func postHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewa
 			return createError("unauthenticated (pow)", 401)
 		}
 
-		res, err = repo.Create(hash, reqBody.Address, reqBody.PublicKey.S, reqBody.Pow.String())
+		res, err = repo.Create(hash, reqBody.Address, reqBody.PublicKey.String(), reqBody.Pow.String())
 	} else {
 		if !validateSignature(req, current) {
 			return createError("unauthenticated", 401)
 		}
 
-		res, err = repo.Update(current, reqBody.Address, reqBody.PublicKey.S)
+		res, err = repo.Update(current, reqBody.Address, reqBody.PublicKey.String())
 	}
 
 	if err != nil || res == false {

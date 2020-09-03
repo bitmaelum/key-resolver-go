@@ -3,7 +3,9 @@ package main
 import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 var version = "v0.0.1"
@@ -54,5 +56,6 @@ func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	lambda.Start(HandleRequest)
 }

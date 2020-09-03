@@ -16,8 +16,8 @@ github.com/aws/aws-sdk-go v1.34.14/go.mod h1:5zCpMtNQVjRREroY7sYe8lOMRSxkhG6MZve
 github.com/benbjohnson/clock v1.0.3/go.mod h1:bGMdMPoPVvcYyt1gHDf4J2KE153Yf9BuiUKYMaxlTDM=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
-github.com/bitmaelum/bitmaelum-suite v0.0.0-20200902192303-2ab6e5818a6a h1:3rqRqxvyPmoToo+GrOl+K3k8Gyp8Z0C9WIItVpqKO1I=
-github.com/bitmaelum/bitmaelum-suite v0.0.0-20200902192303-2ab6e5818a6a/go.mod h1:reXCnSRPYujQURux4JCAme5UAFmqv74j9dVxqkx21/8=
+github.com/bitmaelum/bitmaelum-suite v0.0.0-20200903072357-5b8a727a984e h1:nLU+d0D6R0YbxxLlMTb0Wjp6PQIgT+L5+SGu0T0QDvE=
+github.com/bitmaelum/bitmaelum-suite v0.0.0-20200903072357-5b8a727a984e/go.mod h1:reXCnSRPYujQURux4JCAme5UAFmqv74j9dVxqkx21/8=
 github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee/go.mod h1:S/7n9copUssQ56c7aAgHqftWO4LTf4xY6CGWt8Bc+3M=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
