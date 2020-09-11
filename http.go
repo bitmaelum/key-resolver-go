@@ -26,7 +26,7 @@ func createOutput(data interface{}, statusCode int) *events.APIGatewayV2HTTPResp
 	body, _ := json.MarshalIndent(data, "", "  ")
 
 	return &events.APIGatewayV2HTTPResponse{
-		StatusCode: 200,
+		StatusCode: statusCode,
 		Headers:    nil,
 		Body:       string(body),
 	}
