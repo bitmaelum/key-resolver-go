@@ -11,9 +11,9 @@
 
 This repository holds the (centralized) key resolver for BitMaeleum.
 
-It's purposes is for users to upload they public key and routing information. This will be used by clients 
+Its purposes is for users to upload they public key and routing information. This will be used by clients 
 and servers to find out the actual addresses to send mail to. Since we do not use domain names, we cannot 
-leverage the DNS network. Another reason is that an acount does not have to be located at the address of the 
+leverage the DNS network. Another reason is that an account does not have to be located at the address of the 
 organisation itself.
 
 It works like this:
@@ -36,6 +36,6 @@ This system is the first step. It's centralised system means that one single ent
   - Cannot be managed from a single point
   - Every node is equal (peer) and there are no servers or centralized storage
   - Allows users to add keys which are automatically redistributed throughout the key resolver network.
-  - Collisions of same accounts must be handled (a user adding a key that already exist)
+  - Collisions of same accounts must be handled (a user adding a key which already exists)
 
 ![https://bitmaelum.com/logo_and_name.svg](https://bitmaelum.com/logo_and_name.svg)
