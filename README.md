@@ -37,5 +37,7 @@ This system is the first step. It's centralised system means that one single ent
   - Every node is equal (peer) and there are no servers or centralized storage
   - Allows users to add keys which are automatically redistributed throughout the key resolver network.
   - Collisions of same accounts must be handled (a user adding a key which already exists)
+  
+ Some initial idea's are available [on the wiki](https://github.com/bitmaelum/key-resolver-go/wiki/Key-server-DHT)
 
 ![https://bitmaelum.com/logo_and_name.svg](https://bitmaelum.com/logo_and_name.svg)
