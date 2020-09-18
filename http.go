@@ -52,7 +52,37 @@ func validateSignature(req events.APIGatewayV2HTTPRequest, current *resolver.Res
 		return false
 	}
 
-	hash := sha256.Sum256([]byte(current.Hash + current.Server))
+	hash := sha256.Sum256([]byte(current.Hash + current.Routing))
+	verified, err := bmcrypto.Verify(*pk, hash[:], requestSignature)
+	if err != nil {
+		log.Printf("err: %s", err)
+		return false
+	}
+
+	return verified
+}
+
+
+func validateOrganisationSignature(req events.APIGatewayV2HTTPRequest, current *resolver.ResolveInfoType) bool {
+	log.Printf("req: %#v", req)
+	auth := req.Headers["authorization"]
+	if len(auth) <= 6 || strings.ToUpper(auth[0:7]) != "BEARER " {
+		return false
+	}
+	requestSignature, err := base64.StdEncoding.DecodeString(auth[7:])
+	if err != nil {
+		log.Printf("err: %s", err)
+		return false
+	}
+
+	log.Printf("current: %#v", current)
+	pk, err := bmcrypto.NewPubKey(current.PubKey)
+	if err != nil {
+		log.Printf("err: %s", err)
+		return false
+	}
+
+	hash := sha256.Sum256([]byte(current.Hash + current.Routing))
 	verified, err := bmcrypto.Verify(*pk, hash[:], requestSignature)
 	if err != nil {
 		log.Printf("err: %s", err)

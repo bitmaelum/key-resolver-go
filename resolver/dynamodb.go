@@ -21,9 +21,9 @@ var ErrNotFound = errors.New("record not found")
 // Record holds a DynamoDB record
 type Record struct {
 	Hash      string `dynamodbav:"hash"`
-	Address   string `dynamodbav:"address"`
+	Routing   string `dynamodbav:"routing"`
 	PublicKey string `dynamodbav:"public_key"`
-	Pow       string `dynamodbav:"proof"`
+	Pow       string `dynamodbav:"pow"`
 	Serial    int    `dynamodbav:"sn"`
 }
 
@@ -35,18 +35,18 @@ func NewDynamoDBResolver(client *dynamodb.DynamoDB, tableName string) Repository
 	}
 }
 
-func (r *dynamoDbResolver) Update(info *ResolveInfoType, server, publicKey string) (bool, error) {
+func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
 	serial := strconv.Itoa(rand.Int())
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":s":   {S: aws.String(server)},
+			":s":   {S: aws.String(routing)},
 			":pk":  {S: aws.String(publicKey)},
 			":sn":  {N: aws.String(serial)},
 			":csn": {N: aws.String(strconv.Itoa(info.Serial))},
 		},
 		TableName:           aws.String(r.TableName),
-		UpdateExpression:    aws.String("SET address=:s, public_key=:pk, sn=:sn"),
+		UpdateExpression:    aws.String("SET routing=:s, public_key=:pk, sn=:sn"),
 		ConditionExpression: aws.String("sn = :csn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(info.Hash)},
@@ -62,10 +62,10 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, server, publicKey strin
 	return true, nil
 }
 
-func (r *dynamoDbResolver) Create(hash, server, publicKey, pow string) (bool, error) {
+func (r *dynamoDbResolver) Create(hash, routing, publicKey, pow string) (bool, error) {
 	record := Record{
 		Hash:      hash,
-		Address:   server,
+		Routing:   routing,
 		PublicKey: publicKey,
 		Pow:       pow,
 		Serial:    rand.Int(),
@@ -112,11 +112,11 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	}
 
 	return &ResolveInfoType{
-		Hash:   record.Hash,
-		Server: record.Address,
-		PubKey: record.PublicKey,
-		Pow:    record.Pow,
-		Serial: record.Serial,
+		Hash:    record.Hash,
+		Routing: record.Routing,
+		PubKey:  record.PublicKey,
+		Pow:     record.Pow,
+		Serial:  record.Serial,
 	}, nil
 }
 

@@ -9,10 +9,17 @@ import (
 	"log"
 )
 
-type KeyUpload struct {
+const (
+	// NoOrgHash is the SHA256 of an empty string. Meaning there is no organisation.
+	NoOrgHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+)
+
+type UploadBody struct {
 	PublicKey bmcrypto.PubKey         `json:"public_key"`
-	Address   string                  `json:"address"`
+	Routing   string                  `json:"routing"`
 	Pow       proofofwork.ProofOfWork `json:"pow"`
+	LocalHash string                  `json:"local_hash"`
+	OrgHash   string                  `json:"org_hash"`
 }
 
 func getHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
@@ -30,7 +37,7 @@ func getHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2
 
 	data := jsonOut{
 		"hash":       info.Hash,
-		"server":     info.Server,
+		"routing":    info.Routing,
 		"public_key": info.PubKey,
 	}
 
@@ -45,39 +52,54 @@ func postHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewa
 		return createError("error while posting record", 500)
 	}
 
-	reqBody := &KeyUpload{}
-	err = json.Unmarshal([]byte(req.Body), reqBody)
+	uploadBody := &UploadBody{}
+	err = json.Unmarshal([]byte(req.Body), uploadBody)
 	if err != nil {
 		log.Print(err)
 		return createError("invalid data", 400)
 	}
 
-	var res bool
 	if current == nil {
-		if !reqBody.Pow.IsValid() {
-			return createError("unauthenticated (pow)", 401)
-		}
-
-		res, err = repo.Create(hash, reqBody.Address, reqBody.PublicKey.String(), reqBody.Pow.String())
-	} else {
-		if !validateSignature(req, current) {
-			return createError("unauthenticated", 401)
-		}
-
-		res, err = repo.Update(current, reqBody.Address, reqBody.PublicKey.String())
+		// Does not exist yet
+		return createAccount(hash, *uploadBody)
 	}
+
+	// Try update
+	return updateAccount(*uploadBody, req, current)
+}
+
+func updateAccount(uploadBody UploadBody, req events.APIGatewayV2HTTPRequest, current *resolver.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
+	if !validateSignature(req, current) {
+		return createError("unauthenticated", 401)
+	}
+
+	repo := resolver.GetResolveRepository()
+	res, err := repo.Update(current, uploadBody.Routing, uploadBody.PublicKey.String())
 
 	if err != nil || res == false {
 		log.Print(err)
 		return createError("error while updating: ", 500)
 	}
 
-	// Create returns 201, update returns 200
-	statusCode := 200
-	if current == nil {
-		statusCode = 201
+	return createOutput("updated", 200)
+}
+
+func createAccount(hash string, uploadBody UploadBody) *events.APIGatewayV2HTTPResponse {
+	if !uploadBody.Pow.IsValid() {
+		return createError("incorrect proof-of-work", 401)
 	}
-	return createOutput("ok", statusCode)
+
+	// HAH! We don't know if it's an organisation or not...:/
+
+	repo := resolver.GetResolveRepository()
+	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String(), uploadBody.Pow.String())
+
+	if err != nil || res == false {
+		log.Print(err)
+		return createError("error while creating: ", 500)
+	}
+
+	return createOutput("created", 201)
 }
 
 func deleteHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
