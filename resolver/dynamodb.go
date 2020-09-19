@@ -23,7 +23,7 @@ type Record struct {
 	Hash      string `dynamodbav:"hash"`
 	Routing   string `dynamodbav:"routing"`
 	PublicKey string `dynamodbav:"public_key"`
-	Pow       string `dynamodbav:"pow"`
+	Pow       string `dynamodbav:"proof"`
 	Serial    int    `dynamodbav:"sn"`
 }
 
