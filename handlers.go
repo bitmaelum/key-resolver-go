@@ -17,7 +17,7 @@ const (
 type UploadBody struct {
 	PublicKey bmcrypto.PubKey         `json:"public_key"`
 	Routing   string                  `json:"routing"`
-	Pow       proofofwork.ProofOfWork `json:"pow"`
+	Proof     proofofwork.ProofOfWork `json:"proof"`
 	LocalHash string                  `json:"local_hash"`
 	OrgHash   string                  `json:"org_hash"`
 }
@@ -85,14 +85,14 @@ func updateAccount(uploadBody UploadBody, req events.APIGatewayV2HTTPRequest, cu
 }
 
 func createAccount(hash string, uploadBody UploadBody) *events.APIGatewayV2HTTPResponse {
-	if !uploadBody.Pow.IsValid() {
+	if !uploadBody.Proof.IsValid() {
 		return createError("incorrect proof-of-work", 401)
 	}
 
 	// HAH! We don't know if it's an organisation or not...:/
 
 	repo := resolver.GetResolveRepository()
-	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String(), uploadBody.Pow.String())
+	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String(), uploadBody.Proof.String())
 
 	if err != nil || res == false {
 		log.Print(err)

@@ -23,7 +23,7 @@ type Record struct {
 	Hash      string `dynamodbav:"hash"`
 	Routing   string `dynamodbav:"routing"`
 	PublicKey string `dynamodbav:"public_key"`
-	Pow       string `dynamodbav:"proof"`
+	Proof     string `dynamodbav:"proof"`
 	Serial    int    `dynamodbav:"sn"`
 }
 
@@ -62,12 +62,12 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 	return true, nil
 }
 
-func (r *dynamoDbResolver) Create(hash, routing, publicKey, pow string) (bool, error) {
+func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
 	record := Record{
 		Hash:      hash,
 		Routing:   routing,
 		PublicKey: publicKey,
-		Pow:       pow,
+		Proof:     proof,
 		Serial:    rand.Int(),
 	}
 
@@ -115,7 +115,7 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		Hash:    record.Hash,
 		Routing: record.Routing,
 		PubKey:  record.PublicKey,
-		Pow:     record.Pow,
+		Proof:   record.Proof,
 		Serial:  record.Serial,
 	}, nil
 }
