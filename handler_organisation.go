@@ -50,7 +50,7 @@ func postOrganisationHash(hash string, req events.APIGatewayV2HTTPRequest) *even
 		return createError("invalid data", 400)
 	}
 
-	if ! validateOrganisationBody(*uploadBody) {
+	if !validateOrganisationBody(*uploadBody) {
 		return createError("invalid data", 400)
 	}
 

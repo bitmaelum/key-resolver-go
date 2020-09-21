@@ -30,6 +30,7 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	if len(hash) != 64 {
 		return createError("Incorrect hash address", 400), nil
 	}
+
 	switch req.RouteKey {
 
 	// @TODO: root endpoints are legacy. Remove ASAPs

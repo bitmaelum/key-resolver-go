@@ -51,7 +51,7 @@ func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 		return createError("invalid data", 400)
 	}
 
-	if ! validateRoutingBody(*uploadBody) {
+	if !validateRoutingBody(*uploadBody) {
 		return createError("invalid data", 400)
 	}
 
@@ -126,7 +126,7 @@ func validateRoutingBody(body routingUploadBody) bool {
 	}
 
 	// Check routing
-	_,  err = net.ResolveTCPAddr("tcp", "google.com:2424")
+	_, err = net.ResolveTCPAddr("tcp", "google.com:2424")
 	if err != nil {
 		return false
 	}

@@ -26,8 +26,10 @@ func createOutput(data interface{}, statusCode int) *events.APIGatewayV2HTTPResp
 
 	return &events.APIGatewayV2HTTPResponse{
 		StatusCode: statusCode,
-		Headers:    nil,
-		Body:       string(body),
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+		Body: string(body),
 	}
 }
 
