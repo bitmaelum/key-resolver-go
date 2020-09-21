@@ -31,12 +31,30 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 		return createError("Incorrect hash address", 400), nil
 	}
 	switch req.RouteKey {
+
+	// @TODO: root endpoints are legacy. Remove ASAPs
 	case "GET /{hash}":
-		return getHash(hash, req), nil
+		return getAddressHash(hash, req), nil
 	case "DELETE /{hash}":
-		return deleteHash(hash, req), nil
+		return deleteAddressHash(hash, req), nil
 	case "POST /{hash}":
-		return postHash(hash, req), nil
+		return postAddressHash(hash, req), nil
+
+	// Address endpoints
+	case "GET /address/{hash}":
+		return getAddressHash(hash, req), nil
+	case "DELETE /address/{hash}":
+		return deleteAddressHash(hash, req), nil
+	case "POST /address/{hash}":
+		return postAddressHash(hash, req), nil
+
+	// Routing endpoints
+	case "GET /routing/{hash}":
+		return getRoutingHash(hash, req), nil
+	case "DELETE /routing/{hash}":
+		return deleteRoutingHash(hash, req), nil
+	case "POST /routing/{hash}":
+		return postRoutingHash(hash, req), nil
 	}
 
 	return createError("Forbidden", 403), nil

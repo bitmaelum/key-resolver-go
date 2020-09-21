@@ -1,4 +1,4 @@
-package resolver
+package address_resolver
 
 import (
 	"errors"

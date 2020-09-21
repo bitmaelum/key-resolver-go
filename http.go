@@ -33,7 +33,7 @@ func createOutput(data interface{}, statusCode int) *events.APIGatewayV2HTTPResp
 }
 
 // validateSignature validates a signature based on the authorization header
-func validateSignature(req events.APIGatewayV2HTTPRequest, current *resolver.ResolveInfoType) bool {
+func validateSignature(req events.APIGatewayV2HTTPRequest, current *address_resolver.ResolveInfoType) bool {
 	log.Printf("req: %#v", req)
 	auth := req.Headers["authorization"]
 	if len(auth) <= 6 || strings.ToUpper(auth[0:7]) != "BEARER " {
@@ -63,7 +63,7 @@ func validateSignature(req events.APIGatewayV2HTTPRequest, current *resolver.Res
 }
 
 
-func validateOrganisationSignature(req events.APIGatewayV2HTTPRequest, current *resolver.ResolveInfoType) bool {
+func validateOrganisationSignature(req events.APIGatewayV2HTTPRequest, current *address_resolver.ResolveInfoType) bool {
 	log.Printf("req: %#v", req)
 	auth := req.Headers["authorization"]
 	if len(auth) <= 6 || strings.ToUpper(auth[0:7]) != "BEARER " {

@@ -1,4 +1,4 @@
-package resolver
+package address_resolver
 
 import (
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -35,6 +35,6 @@ func GetResolveRepository() Repository {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("TABLE_NAME"))
+	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ACCOUNT_TABLE_NAME"))
 	return resolver
 }

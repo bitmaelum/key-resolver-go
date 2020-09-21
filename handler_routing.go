@@ -4,28 +4,19 @@ import (
 	"encoding/json"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
-	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
-	"github.com/bitmaelum/key-resolver-go/resolver"
+	"github.com/bitmaelum/key-resolver-go/routing_resolver"
 	"log"
 )
 
-const (
-	// NoOrgHash is the SHA256 of an empty string. Meaning there is no organisation.
-	NoOrgHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-)
-
-type UploadBody struct {
+type RoutingUploadBody struct {
 	PublicKey bmcrypto.PubKey         `json:"public_key"`
 	Routing   string                  `json:"routing"`
-	Proof     proofofwork.ProofOfWork `json:"proof"`
-	LocalHash string                  `json:"local_hash"`
-	OrgHash   string                  `json:"org_hash"`
 }
 
-func getHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := resolver.GetResolveRepository()
+func getRoutingHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+	repo := routing_resolver.GetResolveRepository()
 	info, err := repo.Get(hash)
-	if err != nil && err != resolver.ErrNotFound {
+	if err != nil && err != routing_resolver.ErrNotFound {
 		log.Print(err)
 		return createError("hash not found", 404)
 	}
@@ -44,15 +35,15 @@ func getHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2
 	return createOutput(data, 200)
 }
 
-func postHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := resolver.GetResolveRepository()
+func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+	repo := routing_resolver.GetResolveRepository()
 	current, err := repo.Get(hash)
-	if err != nil && err != resolver.ErrNotFound {
+	if err != nil && err != routing_resolver.ErrNotFound {
 		log.Print(err)
 		return createError("error while posting record", 500)
 	}
 
-	uploadBody := &UploadBody{}
+	uploadBody := &RoutingUploadBody{}
 	err = json.Unmarshal([]byte(req.Body), uploadBody)
 	if err != nil {
 		log.Print(err)
@@ -61,19 +52,19 @@ func postHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewa
 
 	if current == nil {
 		// Does not exist yet
-		return createAccount(hash, *uploadBody)
+		return createRouting(hash, *uploadBody)
 	}
 
 	// Try update
-	return updateAccount(*uploadBody, req, current)
+	return updateRouting(*uploadBody, req, current)
 }
 
-func updateAccount(uploadBody UploadBody, req events.APIGatewayV2HTTPRequest, current *resolver.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
+func updateRouting(uploadBody RoutingUploadBody, req events.APIGatewayV2HTTPRequest, current *routing_resolver.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
 	if !validateSignature(req, current) {
 		return createError("unauthenticated", 401)
 	}
 
-	repo := resolver.GetResolveRepository()
+	repo := routing_resolver.GetResolveRepository()
 	res, err := repo.Update(current, uploadBody.Routing, uploadBody.PublicKey.String())
 
 	if err != nil || res == false {
@@ -84,15 +75,9 @@ func updateAccount(uploadBody UploadBody, req events.APIGatewayV2HTTPRequest, cu
 	return createOutput("updated", 200)
 }
 
-func createAccount(hash string, uploadBody UploadBody) *events.APIGatewayV2HTTPResponse {
-	if !uploadBody.Proof.IsValid() {
-		return createError("incorrect proof-of-work", 401)
-	}
-
-	// HAH! We don't know if it's an organisation or not...:/
-
-	repo := resolver.GetResolveRepository()
-	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String(), uploadBody.Proof.String())
+func createRouting(hash string, uploadBody RoutingUploadBody) *events.APIGatewayV2HTTPResponse {
+	repo := routing_resolver.GetResolveRepository()
+	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String())
 
 	if err != nil || res == false {
 		log.Print(err)
@@ -102,8 +87,8 @@ func createAccount(hash string, uploadBody UploadBody) *events.APIGatewayV2HTTPR
 	return createOutput("created", 201)
 }
 
-func deleteHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := resolver.GetResolveRepository()
+func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+	repo := routing_resolver.GetResolveRepository()
 	current, err := repo.Get(hash)
 	if err != nil {
 		log.Print(err)
