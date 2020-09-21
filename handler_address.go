@@ -7,6 +7,8 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
 	"github.com/bitmaelum/key-resolver-go/address"
 	"log"
+	"regexp"
+	"strings"
 )
 
 type addressUploadBody struct {
@@ -49,6 +51,10 @@ func postAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 	err = json.Unmarshal([]byte(req.Body), uploadBody)
 	if err != nil {
 		log.Print(err)
+		return createError("invalid data", 400)
+	}
+
+	if !validateAddressBody(*uploadBody) {
 		return createError("invalid data", 400)
 	}
 
@@ -116,4 +122,22 @@ func createAddress(hash string, uploadBody addressUploadBody) *events.APIGateway
 	}
 
 	return createOutput("created", 201)
+}
+
+func validateAddressBody(body addressUploadBody) bool {
+	// PubKey and Pow are already validated through the JSON marshalling
+
+	// Check routing
+	routing := strings.ToLower(body.Routing)
+
+	re, err := regexp.Compile("^[a-z0-9]{64}$")
+	if err != nil {
+		return false
+	}
+
+	if re.Match([]byte(routing)) == false {
+		return false
+	}
+
+	return true
 }

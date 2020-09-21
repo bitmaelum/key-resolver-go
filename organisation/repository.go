@@ -1,4 +1,4 @@
-package address
+package organisation
 
 import (
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -9,7 +9,6 @@ import (
 // ResolveInfoType returns information found in the resolver repository
 type ResolveInfoType struct {
 	Hash    string
-	Routing string
 	PubKey  string
 	Proof   string
 	Serial  int
@@ -18,8 +17,8 @@ type ResolveInfoType struct {
 // Repository to resolve records
 type Repository interface {
 	Get(hash string) (*ResolveInfoType, error)
-	Create(hash, routing, publicKey, proof string) (bool, error)
-	Update(info *ResolveInfoType, routing, publicKey string) (bool, error)
+	Create(hash, publicKey, proof string) (bool, error)
+	Update(info *ResolveInfoType, publicKey, proof string) (bool, error)
 	Delete(hash string) (bool, error)
 }
 
@@ -35,6 +34,6 @@ func GetResolveRepository() Repository {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ADDRESS_TABLE_NAME"))
+	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ORGANISATION_TABLE_NAME"))
 	return resolver
 }

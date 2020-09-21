@@ -55,6 +55,14 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 		return deleteRoutingHash(hash, req), nil
 	case "POST /routing/{hash}":
 		return postRoutingHash(hash, req), nil
+
+	// Organisation endpoints
+	case "GET /organisation/{hash}":
+		return getOrganisationHash(hash, req), nil
+	case "DELETE /organisation/{hash}":
+		return deleteOrganisationHash(hash, req), nil
+	case "POST /organisation/{hash}":
+		return postOrganisationHash(hash, req), nil
 	}
 
 	return createError("Forbidden", 403), nil

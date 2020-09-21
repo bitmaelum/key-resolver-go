@@ -6,6 +6,7 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/key-resolver-go/routing"
 	"log"
+	"net"
 )
 
 type routingUploadBody struct {
@@ -47,6 +48,10 @@ func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 	err = json.Unmarshal([]byte(req.Body), uploadBody)
 	if err != nil {
 		log.Print(err)
+		return createError("invalid data", 400)
+	}
+
+	if ! validateRoutingBody(*uploadBody) {
 		return createError("invalid data", 400)
 	}
 
@@ -110,4 +115,21 @@ func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 	}
 
 	return createOutput("ok", 200)
+}
+
+func validateRoutingBody(body routingUploadBody) bool {
+	// PubKey is already validated through the JSON marshalling
+
+	_, _, err := net.SplitHostPort(body.Routing)
+	if err != nil {
+		body.Routing += ":2424"
+	}
+
+	// Check routing
+	_,  err = net.ResolveTCPAddr("tcp", "google.com:2424")
+	if err != nil {
+		return false
+	}
+
+	return true
 }
