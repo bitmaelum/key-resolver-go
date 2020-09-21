@@ -1,4 +1,4 @@
-package address_resolver
+package routing
 
 import (
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -11,14 +11,13 @@ type ResolveInfoType struct {
 	Hash    string
 	Routing string
 	PubKey  string
-	Proof   string
 	Serial  int
 }
 
 // Repository to resolve records
 type Repository interface {
 	Get(hash string) (*ResolveInfoType, error)
-	Create(hash, routing, publicKey, proof string) (bool, error)
+	Create(hash, routing, publicKey string) (bool, error)
 	Update(info *ResolveInfoType, routing, publicKey string) (bool, error)
 	Delete(hash string) (bool, error)
 }
@@ -35,6 +34,6 @@ func GetResolveRepository() Repository {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ACCOUNT_TABLE_NAME"))
+	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ROUTING_TABLE_NAME"))
 	return resolver
 }

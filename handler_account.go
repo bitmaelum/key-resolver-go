@@ -5,20 +5,20 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
-	"github.com/bitmaelum/key-resolver-go/address_resolver"
+	"github.com/bitmaelum/key-resolver-go/address"
 	"log"
 )
 
-type AddressUploadBody struct {
+type addressUploadBody struct {
 	PublicKey bmcrypto.PubKey         `json:"public_key"`
 	Routing   string                  `json:"routing"`
 	Proof     proofofwork.ProofOfWork `json:"proof"`
 }
 
 func getAddressHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := address_resolver.GetResolveRepository()
+	repo := address.GetResolveRepository()
 	info, err := repo.Get(hash)
-	if err != nil && err != address_resolver.ErrNotFound {
+	if err != nil && err != address.ErrNotFound {
 		log.Print(err)
 		return createError("hash not found", 404)
 	}
@@ -38,14 +38,14 @@ func getAddressHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 }
 
 func postAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := address_resolver.GetResolveRepository()
+	repo := address.GetResolveRepository()
 	current, err := repo.Get(hash)
-	if err != nil && err != address_resolver.ErrNotFound {
+	if err != nil && err != address.ErrNotFound {
 		log.Print(err)
 		return createError("error while posting record", 500)
 	}
 
-	uploadBody := &AddressUploadBody{}
+	uploadBody := &addressUploadBody{}
 	err = json.Unmarshal([]byte(req.Body), uploadBody)
 	if err != nil {
 		log.Print(err)
@@ -62,7 +62,7 @@ func postAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 }
 
 func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := address_resolver.GetResolveRepository()
+	repo := address.GetResolveRepository()
 	current, err := repo.Get(hash)
 	if err != nil {
 		log.Print(err)
@@ -73,7 +73,7 @@ func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current) {
+	if !validateSignature(req, current.PubKey, current.Hash+current.Routing) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -86,12 +86,12 @@ func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 	return createOutput("ok", 200)
 }
 
-func updateAddress(uploadBody AddressUploadBody, req events.APIGatewayV2HTTPRequest, current *address_resolver.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current) {
+func updateAddress(uploadBody addressUploadBody, req events.APIGatewayV2HTTPRequest, current *address.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
+	if !validateSignature(req, current.PubKey, current.Hash+current.Routing) {
 		return createError("unauthenticated", 401)
 	}
 
-	repo := address_resolver.GetResolveRepository()
+	repo := address.GetResolveRepository()
 	res, err := repo.Update(current, uploadBody.Routing, uploadBody.PublicKey.String())
 
 	if err != nil || res == false {
@@ -102,12 +102,12 @@ func updateAddress(uploadBody AddressUploadBody, req events.APIGatewayV2HTTPRequ
 	return createOutput("updated", 200)
 }
 
-func createAddress(hash string, uploadBody AddressUploadBody) *events.APIGatewayV2HTTPResponse {
+func createAddress(hash string, uploadBody addressUploadBody) *events.APIGatewayV2HTTPResponse {
 	if !uploadBody.Proof.IsValid() {
 		return createError("incorrect proof-of-work", 401)
 	}
 
-	repo := address_resolver.GetResolveRepository()
+	repo := address.GetResolveRepository()
 	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String(), uploadBody.Proof.String())
 
 	if err != nil || res == false {

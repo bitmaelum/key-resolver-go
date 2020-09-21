@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
-	"github.com/bitmaelum/key-resolver-go/routing_resolver"
+	"github.com/bitmaelum/key-resolver-go/routing"
 	"log"
 )
 
-type RoutingUploadBody struct {
-	PublicKey bmcrypto.PubKey         `json:"public_key"`
-	Routing   string                  `json:"routing"`
+type routingUploadBody struct {
+	PublicKey bmcrypto.PubKey `json:"public_key"`
+	Routing   string          `json:"routing"`
 }
 
 func getRoutingHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := routing_resolver.GetResolveRepository()
+	repo := routing.GetResolveRepository()
 	info, err := repo.Get(hash)
-	if err != nil && err != routing_resolver.ErrNotFound {
+	if err != nil && err != routing.ErrNotFound {
 		log.Print(err)
 		return createError("hash not found", 404)
 	}
@@ -36,14 +36,14 @@ func getRoutingHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 }
 
 func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := routing_resolver.GetResolveRepository()
+	repo := routing.GetResolveRepository()
 	current, err := repo.Get(hash)
-	if err != nil && err != routing_resolver.ErrNotFound {
+	if err != nil && err != routing.ErrNotFound {
 		log.Print(err)
 		return createError("error while posting record", 500)
 	}
 
-	uploadBody := &RoutingUploadBody{}
+	uploadBody := &routingUploadBody{}
 	err = json.Unmarshal([]byte(req.Body), uploadBody)
 	if err != nil {
 		log.Print(err)
@@ -59,12 +59,12 @@ func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 	return updateRouting(*uploadBody, req, current)
 }
 
-func updateRouting(uploadBody RoutingUploadBody, req events.APIGatewayV2HTTPRequest, current *routing_resolver.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current) {
+func updateRouting(uploadBody routingUploadBody, req events.APIGatewayV2HTTPRequest, current *routing.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
+	if !validateSignature(req, current.PubKey, current.Hash+current.Routing) {
 		return createError("unauthenticated", 401)
 	}
 
-	repo := routing_resolver.GetResolveRepository()
+	repo := routing.GetResolveRepository()
 	res, err := repo.Update(current, uploadBody.Routing, uploadBody.PublicKey.String())
 
 	if err != nil || res == false {
@@ -75,8 +75,8 @@ func updateRouting(uploadBody RoutingUploadBody, req events.APIGatewayV2HTTPRequ
 	return createOutput("updated", 200)
 }
 
-func createRouting(hash string, uploadBody RoutingUploadBody) *events.APIGatewayV2HTTPResponse {
-	repo := routing_resolver.GetResolveRepository()
+func createRouting(hash string, uploadBody routingUploadBody) *events.APIGatewayV2HTTPResponse {
+	repo := routing.GetResolveRepository()
 	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String())
 
 	if err != nil || res == false {
@@ -88,7 +88,7 @@ func createRouting(hash string, uploadBody RoutingUploadBody) *events.APIGateway
 }
 
 func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
-	repo := routing_resolver.GetResolveRepository()
+	repo := routing.GetResolveRepository()
 	current, err := repo.Get(hash)
 	if err != nil {
 		log.Print(err)
@@ -99,7 +99,7 @@ func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current) {
+	if !validateSignature(req, current.PubKey, current.Hash+current.Routing) {
 		return createError("unauthenticated", 401)
 	}
 

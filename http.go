@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
-	"github.com/bitmaelum/key-resolver-go/resolver"
 	"log"
 	"strings"
 )
@@ -33,7 +32,7 @@ func createOutput(data interface{}, statusCode int) *events.APIGatewayV2HTTPResp
 }
 
 // validateSignature validates a signature based on the authorization header
-func validateSignature(req events.APIGatewayV2HTTPRequest, current *address_resolver.ResolveInfoType) bool {
+func validateSignature(req events.APIGatewayV2HTTPRequest, pubKey, hashData string) bool {
 	log.Printf("req: %#v", req)
 	auth := req.Headers["authorization"]
 	if len(auth) <= 6 || strings.ToUpper(auth[0:7]) != "BEARER " {
@@ -45,44 +44,13 @@ func validateSignature(req events.APIGatewayV2HTTPRequest, current *address_reso
 		return false
 	}
 
-	log.Printf("current: %#v", current)
-	pk, err := bmcrypto.NewPubKey(current.PubKey)
+	pk, err := bmcrypto.NewPubKey(pubKey)
 	if err != nil {
 		log.Printf("err: %s", err)
 		return false
 	}
 
-	hash := sha256.Sum256([]byte(current.Hash + current.Routing))
-	verified, err := bmcrypto.Verify(*pk, hash[:], requestSignature)
-	if err != nil {
-		log.Printf("err: %s", err)
-		return false
-	}
-
-	return verified
-}
-
-
-func validateOrganisationSignature(req events.APIGatewayV2HTTPRequest, current *address_resolver.ResolveInfoType) bool {
-	log.Printf("req: %#v", req)
-	auth := req.Headers["authorization"]
-	if len(auth) <= 6 || strings.ToUpper(auth[0:7]) != "BEARER " {
-		return false
-	}
-	requestSignature, err := base64.StdEncoding.DecodeString(auth[7:])
-	if err != nil {
-		log.Printf("err: %s", err)
-		return false
-	}
-
-	log.Printf("current: %#v", current)
-	pk, err := bmcrypto.NewPubKey(current.PubKey)
-	if err != nil {
-		log.Printf("err: %s", err)
-		return false
-	}
-
-	hash := sha256.Sum256([]byte(current.Hash + current.Routing))
+	hash := sha256.Sum256([]byte(hashData))
 	verified, err := bmcrypto.Verify(*pk, hash[:], requestSignature)
 	if err != nil {
 		log.Printf("err: %s", err)

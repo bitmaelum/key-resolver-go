@@ -1,4 +1,4 @@
-package address_resolver
+package routing
 
 import (
 	"errors"
@@ -23,7 +23,6 @@ type Record struct {
 	Hash      string `dynamodbav:"hash"`
 	Routing   string `dynamodbav:"routing"`
 	PublicKey string `dynamodbav:"public_key"`
-	Proof     string `dynamodbav:"proof"`
 	Serial    int    `dynamodbav:"sn"`
 }
 
@@ -40,7 +39,7 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":s":   {S: aws.String(routing)},
+			":r":   {S: aws.String(routing)},
 			":pk":  {S: aws.String(publicKey)},
 			":sn":  {N: aws.String(serial)},
 			":csn": {N: aws.String(strconv.Itoa(info.Serial))},
@@ -62,12 +61,11 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 	return true, nil
 }
 
-func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
+func (r *dynamoDbResolver) Create(hash, routing, publicKey string) (bool, error) {
 	record := Record{
 		Hash:      hash,
 		Routing:   routing,
 		PublicKey: publicKey,
-		Proof:     proof,
 		Serial:    rand.Int(),
 	}
 
@@ -115,7 +113,6 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		Hash:    record.Hash,
 		Routing: record.Routing,
 		PubKey:  record.PublicKey,
-		Proof:   record.Proof,
 		Serial:  record.Serial,
 	}, nil
 }
