@@ -28,6 +28,12 @@ The same goes for routing information:
   - Others can use a simple GET operation to fetch this information.
   - Changing or deleting must be done by adding a signature that proofs ownership of the private key.
 
+The same goes for organisation information:
+
+  - User uploads public key for their organisation.
+  - Others can use a simple GET operation to fetch this information.
+  - Changing or deleting must be done by adding a signature that proofs ownership of the private key.
+
 
 Note that the keyserver does NOT hold any account information or messages. It only keeps track of public 
 keys and routing information. Even bitmaelum addresses are not found on this service: only hashes are. 
