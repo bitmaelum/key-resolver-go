@@ -45,7 +45,7 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 			":csn": {N: aws.String(strconv.Itoa(info.Serial))},
 		},
 		TableName:           aws.String(r.TableName),
-		UpdateExpression:    aws.String("SET routing=:s, public_key=:pk, sn=:sn"),
+		UpdateExpression:    aws.String("SET routing=:r, public_key=:pk, sn=:sn"),
 		ConditionExpression: aws.String("sn = :csn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(info.Hash)},

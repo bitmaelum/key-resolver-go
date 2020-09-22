@@ -65,7 +65,7 @@ func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 }
 
 func updateRouting(uploadBody routingUploadBody, req events.APIGatewayV2HTTPRequest, current *routing.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+current.Routing) {
+	if !validateSignature(req, current.PubKey, current.Hash) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -104,7 +104,7 @@ func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+current.Routing) {
+	if !validateSignature(req, current.PubKey, current.Hash) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -126,8 +126,9 @@ func validateRoutingBody(body routingUploadBody) bool {
 	}
 
 	// Check routing
-	_, err = net.ResolveTCPAddr("tcp", "google.com:2424")
+	_, err = net.ResolveTCPAddr("tcp", body.Routing)
 	if err != nil {
+		log.Print(err)
 		return false
 	}
 
