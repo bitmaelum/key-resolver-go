@@ -13,7 +13,7 @@ import (
 
 type addressUploadBody struct {
 	PublicKey bmcrypto.PubKey         `json:"public_key"`
-	Routing   string                  `json:"routing"`
+	RoutingID string                  `json:"routing_id"`
 	Proof     proofofwork.ProofOfWork `json:"proof"`
 }
 
@@ -32,7 +32,7 @@ func getAddressHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 
 	data := jsonOut{
 		"hash":       info.Hash,
-		"routing":    info.Routing,
+		"routing_id": info.RoutingID,
 		"public_key": info.PubKey,
 	}
 
@@ -79,7 +79,7 @@ func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+current.Routing) {
+	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -93,12 +93,12 @@ func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 }
 
 func updateAddress(uploadBody addressUploadBody, req events.APIGatewayV2HTTPRequest, current *address.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+current.Routing) {
+	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID) {
 		return createError("unauthenticated", 401)
 	}
 
 	repo := address.GetResolveRepository()
-	res, err := repo.Update(current, uploadBody.Routing, uploadBody.PublicKey.String())
+	res, err := repo.Update(current, uploadBody.RoutingID, uploadBody.PublicKey.String())
 
 	if err != nil || res == false {
 		log.Print(err)
@@ -114,8 +114,7 @@ func createAddress(hash string, uploadBody addressUploadBody) *events.APIGateway
 	}
 
 	repo := address.GetResolveRepository()
-	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String(), uploadBody.Proof.String())
-
+	res, err := repo.Create(hash, uploadBody.RoutingID, uploadBody.PublicKey.String(), uploadBody.Proof.String())
 	if err != nil || res == false {
 		log.Print(err)
 		return createError("error while creating: ", 500)
@@ -128,7 +127,7 @@ func validateAddressBody(body addressUploadBody) bool {
 	// PubKey and Pow are already validated through the JSON marshalling
 
 	// Check routing
-	routing := strings.ToLower(body.Routing)
+	routing := strings.ToLower(body.RoutingID)
 
 	re, err := regexp.Compile("^[a-z0-9]{64}$")
 	if err != nil {

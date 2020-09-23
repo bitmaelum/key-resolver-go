@@ -112,11 +112,11 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	}
 
 	return &ResolveInfoType{
-		Hash:    record.Hash,
-		Routing: record.Routing,
-		PubKey:  record.PublicKey,
-		Proof:   record.Proof,
-		Serial:  record.Serial,
+		Hash:      record.Hash,
+		RoutingID: record.Routing,
+		PubKey:    record.PublicKey,
+		Proof:     record.Proof,
+		Serial:    record.Serial,
 	}, nil
 }
 

@@ -8,11 +8,11 @@ import (
 
 // ResolveInfoType returns information found in the resolver repository
 type ResolveInfoType struct {
-	Hash    string
-	Routing string
-	PubKey  string
-	Proof   string
-	Serial  int
+	Hash      string
+	RoutingID string
+	PubKey    string
+	Proof     string
+	Serial    int
 }
 
 // Repository to resolve records
