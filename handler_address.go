@@ -142,7 +142,7 @@ func deleteAddressHashByOrganization(hash string, organizationInfo *organization
 
 	//Checks if the userhash+orghash matches the hash to be deleted
 	if !pkgAddress.VerifyHash(hash, organizationInfo.UserHash, organizationInfo.OrganizationHash) {
-		return createError("error validating address", 500)
+		return createError("error validating address", 401)
 	}
 
 	if !validateSignature(req, currentOrg.PubKey, currentAddress.Hash+strconv.Itoa(currentAddress.Serial)) {
