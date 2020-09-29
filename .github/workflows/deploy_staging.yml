@@ -1,10 +1,8 @@
-name: staging
+name: Deploy to Staging
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches: [ develop ]
 
 jobs:
   build:
