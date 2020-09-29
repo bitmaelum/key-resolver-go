@@ -2,19 +2,28 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+	"regexp"
+	"strconv"
+	"strings"
+
 	"github.com/aws/aws-lambda-go/events"
+	pkgAddress "github.com/bitmaelum/bitmaelum-suite/pkg/address"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
 	"github.com/bitmaelum/key-resolver-go/address"
-	"log"
-	"regexp"
-	"strings"
+	"github.com/bitmaelum/key-resolver-go/organisation"
 )
 
 type addressUploadBody struct {
 	PublicKey bmcrypto.PubKey         `json:"public_key"`
 	RoutingID string                  `json:"routing_id"`
 	Proof     proofofwork.ProofOfWork `json:"proof"`
+}
+
+type organizationRequestBody struct {
+	UserHash         string `json:"user_hash"`
+	OrganizationHash string `json:"org_hash"`
 }
 
 func getAddressHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
@@ -31,9 +40,10 @@ func getAddressHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 	}
 
 	data := jsonOut{
-		"hash":       info.Hash,
-		"routing_id": info.RoutingID,
-		"public_key": info.PubKey,
+		"hash":          info.Hash,
+		"routing_id":    info.RoutingID,
+		"public_key":    info.PubKey,
+		"serial_number": strconv.Itoa(info.Serial),
 	}
 
 	return createOutput(data, 200)
@@ -68,6 +78,21 @@ func postAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 }
 
 func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+	requestBody := &organizationRequestBody{}
+	err := json.Unmarshal([]byte(req.Body), requestBody)
+	if err != nil {
+		log.Print(err)
+		return createError("invalid body data", 400)
+	}
+
+	if requestBody.OrganizationHash != "" {
+		return deleteAddressHashByOrganization(hash, requestBody, req)
+	}
+
+	return deleteAddressHashByOwner(hash, req)
+}
+
+func deleteAddressHashByOwner(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
 	repo := address.GetResolveRepository()
 	current, err := repo.Get(hash)
 	if err != nil {
@@ -79,7 +104,7 @@ func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID) {
+	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID+strconv.Itoa(current.Serial)) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -92,8 +117,49 @@ func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 	return createOutput("ok", 200)
 }
 
+func deleteAddressHashByOrganization(hash string, organizationInfo *organizationRequestBody, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+	addressRepo := address.GetResolveRepository()
+	currentAddress, err := addressRepo.Get(hash)
+	if err != nil {
+		log.Print(err)
+		return createError("error while fetching address record", 500)
+	}
+
+	orgRepo := organisation.GetResolveRepository()
+	currentOrg, err := orgRepo.Get(organizationInfo.OrganizationHash)
+	if err != nil {
+		log.Print(err)
+		return createError("error while fetching organization record", 500)
+	}
+
+	if currentAddress == nil {
+		return createError("cannot find address record", 404)
+	}
+
+	if currentOrg == nil {
+		return createError("cannot find organization record", 404)
+	}
+
+	//Checks if the userhash+orghash matches the hash to be deleted
+	if !pkgAddress.VerifyHash(hash, organizationInfo.UserHash, organizationInfo.OrganizationHash) {
+		return createError("error validating address", 401)
+	}
+
+	if !validateSignature(req, currentOrg.PubKey, currentAddress.Hash+strconv.Itoa(currentAddress.Serial)) {
+		return createError("unauthenticated", 401)
+	}
+
+	res, err := addressRepo.Delete(currentAddress.Hash)
+	if err != nil || res == false {
+		log.Print(err)
+		return createError("error while deleting address record", 500)
+	}
+
+	return createOutput("ok", 200)
+}
+
 func updateAddress(uploadBody addressUploadBody, req events.APIGatewayV2HTTPRequest, current *address.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID) {
+	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID+strconv.Itoa(current.Serial)) {
 		return createError("unauthenticated", 401)
 	}
 

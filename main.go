@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var version = "v0.0.1"
