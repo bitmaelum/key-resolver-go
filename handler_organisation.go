@@ -30,7 +30,7 @@ func getOrganisationHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.
 		return createError("hash not found", 404)
 	}
 
-	data := jsonOut{
+	data := rawJSONOut{
 		"hash":          info.Hash,
 		"public_key":    info.PubKey,
 		"validations":   info.Validations,
