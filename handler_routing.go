@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"log"
+	"net"
+	"strconv"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/key-resolver-go/routing"
-	"log"
-	"net"
 )
 
 type routingUploadBody struct {
@@ -28,9 +30,10 @@ func getRoutingHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 	}
 
 	data := jsonOut{
-		"hash":       info.Hash,
-		"routing":    info.Routing,
-		"public_key": info.PubKey,
+		"hash":          info.Hash,
+		"routing":       info.Routing,
+		"public_key":    info.PubKey,
+		"serial_number": strconv.Itoa(info.Serial),
 	}
 
 	return createOutput(data, 200)
@@ -65,7 +68,7 @@ func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 }
 
 func updateRouting(uploadBody routingUploadBody, req events.APIGatewayV2HTTPRequest, current *routing.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash) {
+	if !validateSignature(req, current.PubKey, current.Hash+strconv.Itoa(current.Serial)) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -104,7 +107,7 @@ func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash) {
+	if !validateSignature(req, current.PubKey, current.Hash+strconv.Itoa(current.Serial)) {
 		return createError("unauthenticated", 401)
 	}
 
