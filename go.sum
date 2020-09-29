@@ -18,6 +18,9 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/bitmaelum/bitmaelum-suite v0.0.0-20200903072357-5b8a727a984e h1:nLU+d0D6R0YbxxLlMTb0Wjp6PQIgT+L5+SGu0T0QDvE=
 github.com/bitmaelum/bitmaelum-suite v0.0.0-20200903072357-5b8a727a984e/go.mod h1:reXCnSRPYujQURux4JCAme5UAFmqv74j9dVxqkx21/8=
+github.com/bitmaelum/bitmaelum-suite v0.0.0-20200920071300-2c1d7ed2637f h1:D+DZwTZIEOBfpPU7Wlk8i3wMf7qGStslwkPU6z53Bsw=
+github.com/bitmaelum/bitmaelum-suite v0.0.0-20200920071300-2c1d7ed2637f/go.mod h1:UJVrJfuR1TgSoPTrd0S1cAzP936oMTpV9/k1bEGMj5s=
+github.com/bitmaelum/bitmaelum-suite v0.0.0-20200925112052-489d9982e7e5 h1:q3FeZ+Gp+p1B5tcysFbDGBG9miR+8MSGRrAl/49y54A=
 github.com/c2h5oh/datasize v0.0.0-20200112174442-28bbd4740fee/go.mod h1:S/7n9copUssQ56c7aAgHqftWO4LTf4xY6CGWt8Bc+3M=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
@@ -42,6 +45,7 @@ github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
+github.com/ernesto-jimenez/httplogger v0.0.0-20150224132909-86cc44f6150a/go.mod h1:zroVJTjbZUlS0lcewJlcPsS6JQIoFWePhxjOF0/n0f4=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fzipp/gocyclo v0.0.0-20150627053110-6acd4345c835 h1:roDmqJ4Qes7hrDOsWsMCce0vQHz3xiMPjJ9m4c2eeNs=
 github.com/fzipp/gocyclo v0.0.0-20150627053110-6acd4345c835/go.mod h1:BjL/N0+C+j9uNX+1xcNuM9vdSIcXCZrQZUYbXOFbgN8=
