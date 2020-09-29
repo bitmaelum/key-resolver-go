@@ -8,17 +8,18 @@ import (
 
 // ResolveInfoType returns information found in the resolver repository
 type ResolveInfoType struct {
-	Hash   string
-	PubKey string
-	Proof  string
-	Serial int
+	Hash        string
+	PubKey      string
+	Proof       string
+	Validations []string
+	Serial      int
 }
 
 // Repository to resolve records
 type Repository interface {
 	Get(hash string) (*ResolveInfoType, error)
 	Create(hash, publicKey, proof string) (bool, error)
-	Update(info *ResolveInfoType, publicKey, proof string) (bool, error)
+	Update(info *ResolveInfoType, publicKey, proof string, validations []string) (bool, error)
 	Delete(hash string) (bool, error)
 }
 
