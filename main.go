@@ -34,14 +34,6 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 
 	switch req.RouteKey {
 
-	// @TODO: root endpoints are legacy. Remove ASAPs
-	case "GET /{hash}":
-		return getAddressHash(hash, req), nil
-	case "DELETE /{hash}":
-		return deleteAddressHash(hash, req), nil
-	case "POST /{hash}":
-		return postAddressHash(hash, req), nil
-
 	// Address endpoints
 	case "GET /address/{hash}":
 		return getAddressHash(hash, req), nil

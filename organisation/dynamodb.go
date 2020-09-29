@@ -63,12 +63,13 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, publicKey, proof string
 	return true, nil
 }
 
-func (r *dynamoDbResolver) Create(hash, publicKey, proof string) (bool, error) {
+func (r *dynamoDbResolver) Create(hash, publicKey, proof string, validations []string) (bool, error) {
 	record := Record{
-		Hash:      hash,
-		PublicKey: publicKey,
-		Proof:     proof,
-		Serial:    rand.Int(),
+		Hash:        hash,
+		PublicKey:   publicKey,
+		Proof:       proof,
+		Validations: validations,
+		Serial:      rand.Int(),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)

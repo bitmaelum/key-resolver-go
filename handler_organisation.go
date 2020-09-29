@@ -12,9 +12,9 @@ import (
 )
 
 type organisationUploadBody struct {
-	PublicKey  bmcrypto.PubKey         `json:"public_key"`
-	Proof      proofofwork.ProofOfWork `json:"proof"`
-	Validation []string                `json:"validations"`
+	PublicKey   bmcrypto.PubKey         `json:"public_key"`
+	Proof       proofofwork.ProofOfWork `json:"proof"`
+	Validations []string                `json:"validations"`
 }
 
 func getOrganisationHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
@@ -99,7 +99,7 @@ func updateOrganisation(uploadBody organisationUploadBody, req events.APIGateway
 	}
 
 	repo := organisation.GetResolveRepository()
-	res, err := repo.Update(current, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validation)
+	res, err := repo.Update(current, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
 	if err != nil || res == false {
 		log.Print(err)
@@ -115,7 +115,7 @@ func createOrganisation(hash string, uploadBody organisationUploadBody) *events.
 	}
 
 	repo := organisation.GetResolveRepository()
-	res, err := repo.Create(hash, uploadBody.PublicKey.String(), uploadBody.Proof.String())
+	res, err := repo.Create(hash, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
 	if err != nil || res == false {
 		log.Print(err)
