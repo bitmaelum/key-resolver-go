@@ -2,12 +2,13 @@ package routing
 
 import (
 	"errors"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"log"
-	"math/rand"
-	"strconv"
 )
 
 type dynamoDbResolver struct {
@@ -23,7 +24,7 @@ type Record struct {
 	Hash      string `dynamodbav:"hash"`
 	Routing   string `dynamodbav:"routing"`
 	PublicKey string `dynamodbav:"public_key"`
-	Serial    int    `dynamodbav:"sn"`
+	Serial    uint64 `dynamodbav:"sn"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
@@ -35,14 +36,14 @@ func NewDynamoDBResolver(client *dynamodb.DynamoDB, tableName string) Repository
 }
 
 func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
-	serial := strconv.Itoa(rand.Int())
+	serial := strconv.FormatUint(uint64(time.Now().Unix()), 10)
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":r":   {S: aws.String(routing)},
 			":pk":  {S: aws.String(publicKey)},
 			":sn":  {N: aws.String(serial)},
-			":csn": {N: aws.String(strconv.Itoa(info.Serial))},
+			":csn": {N: aws.String(strconv.FormatUint(info.Serial, 10))},
 		},
 		TableName:           aws.String(r.TableName),
 		UpdateExpression:    aws.String("SET routing=:r, public_key=:pk, sn=:sn"),
@@ -66,7 +67,7 @@ func (r *dynamoDbResolver) Create(hash, routing, publicKey string) (bool, error)
 		Hash:      hash,
 		Routing:   routing,
 		PublicKey: publicKey,
-		Serial:    rand.Int(),
+		Serial:    uint64(time.Now().Unix()),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)

@@ -33,7 +33,7 @@ func getRoutingHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 		"hash":          info.Hash,
 		"routing":       info.Routing,
 		"public_key":    info.PubKey,
-		"serial_number": strconv.Itoa(info.Serial),
+		"serial_number": strconv.FormatUint(info.Serial, 10),
 	}
 
 	return createOutput(data, 200)
@@ -68,7 +68,7 @@ func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 }
 
 func updateRouting(uploadBody routingUploadBody, req events.APIGatewayV2HTTPRequest, current *routing.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+strconv.Itoa(current.Serial)) {
+	if !validateSignature(req, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -107,7 +107,7 @@ func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+strconv.Itoa(current.Serial)) {
+	if !validateSignature(req, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
