@@ -12,8 +12,9 @@ import (
 )
 
 type organisationUploadBody struct {
-	PublicKey bmcrypto.PubKey         `json:"public_key"`
-	Proof     proofofwork.ProofOfWork `json:"proof"`
+	PublicKey   bmcrypto.PubKey         `json:"public_key"`
+	Proof       proofofwork.ProofOfWork `json:"proof"`
+	Validations []string                `json:"validations"`
 }
 
 func getOrganisationHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
@@ -29,10 +30,15 @@ func getOrganisationHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.
 		return createError("hash not found", 404)
 	}
 
-	data := jsonOut{
+	data := rawJSONOut{
 		"hash":          info.Hash,
 		"public_key":    info.PubKey,
+<<<<<<< HEAD
 		"serial_number": strconv.FormatUint(info.Serial, 10),
+=======
+		"validations":   info.Validations,
+		"serial_number": strconv.Itoa(info.Serial),
+>>>>>>> bitmaelum/develop
 	}
 
 	return createOutput(data, 200)
@@ -97,7 +103,7 @@ func updateOrganisation(uploadBody organisationUploadBody, req events.APIGateway
 	}
 
 	repo := organisation.GetResolveRepository()
-	res, err := repo.Update(current, uploadBody.PublicKey.String(), uploadBody.Proof.String())
+	res, err := repo.Update(current, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
 	if err != nil || res == false {
 		log.Print(err)
@@ -113,7 +119,7 @@ func createOrganisation(hash string, uploadBody organisationUploadBody) *events.
 	}
 
 	repo := organisation.GetResolveRepository()
-	res, err := repo.Create(hash, uploadBody.PublicKey.String(), uploadBody.Proof.String())
+	res, err := repo.Create(hash, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
 	if err != nil || res == false {
 		log.Print(err)

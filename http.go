@@ -11,6 +11,7 @@ import (
 )
 
 type jsonOut map[string]string
+type rawJSONOut map[string]interface{}
 
 // createError creates an error message json structure
 func createError(msg string, statusCode int) *events.APIGatewayV2HTTPResponse {
