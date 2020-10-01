@@ -21,18 +21,11 @@ var ErrNotFound = errors.New("record not found")
 
 // Record holds a DynamoDB record
 type Record struct {
-<<<<<<< HEAD
-	Hash      string `dynamodbav:"hash"`
-	PublicKey string `dynamodbav:"public_key"`
-	Proof     string `dynamodbav:"proof"`
-	Serial    uint64 `dynamodbav:"sn"`
-=======
 	Hash        string   `dynamodbav:"hash"`
 	PublicKey   string   `dynamodbav:"public_key"`
 	Proof       string   `dynamodbav:"proof"`
 	Validations []string `dynamodbav:"validations"`
-	Serial      int      `dynamodbav:"sn"`
->>>>>>> bitmaelum/develop
+	Serial      uint64   `dynamodbav:"sn"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
@@ -43,13 +36,8 @@ func NewDynamoDBResolver(client *dynamodb.DynamoDB, tableName string) Repository
 	}
 }
 
-<<<<<<< HEAD
-func (r *dynamoDbResolver) Update(info *ResolveInfoType, publicKey, proof string) (bool, error) {
-	serial := strconv.FormatUint(uint64(time.Now().Unix()), 10)
-=======
 func (r *dynamoDbResolver) Update(info *ResolveInfoType, publicKey, proof string, validations []string) (bool, error) {
-	serial := strconv.Itoa(rand.Int())
->>>>>>> bitmaelum/develop
+	serial := strconv.FormatUint(uint64(time.Now().Unix()), 10)
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
@@ -78,18 +66,11 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, publicKey, proof string
 
 func (r *dynamoDbResolver) Create(hash, publicKey, proof string, validations []string) (bool, error) {
 	record := Record{
-<<<<<<< HEAD
-		Hash:      hash,
-		PublicKey: publicKey,
-		Proof:     proof,
-		Serial:    uint64(time.Now().Unix()),
-=======
 		Hash:        hash,
 		PublicKey:   publicKey,
 		Proof:       proof,
 		Validations: validations,
-		Serial:      rand.Int(),
->>>>>>> bitmaelum/develop
+		Serial:      uint64(time.Now().Unix()),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)

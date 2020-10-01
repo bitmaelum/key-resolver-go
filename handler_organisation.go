@@ -33,12 +33,7 @@ func getOrganisationHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.
 	data := rawJSONOut{
 		"hash":          info.Hash,
 		"public_key":    info.PubKey,
-<<<<<<< HEAD
 		"serial_number": strconv.FormatUint(info.Serial, 10),
-=======
-		"validations":   info.Validations,
-		"serial_number": strconv.Itoa(info.Serial),
->>>>>>> bitmaelum/develop
 	}
 
 	return createOutput(data, 200)

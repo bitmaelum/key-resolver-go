@@ -9,18 +9,11 @@ import (
 
 // ResolveInfoType returns information found in the resolver repository
 type ResolveInfoType struct {
-<<<<<<< HEAD
-	Hash   string
-	PubKey string
-	Proof  string
-	Serial uint64
-=======
 	Hash        string
 	PubKey      string
 	Proof       string
 	Validations []string
-	Serial      int
->>>>>>> bitmaelum/develop
+	Serial      uint64
 }
 
 // Repository to resolve records
