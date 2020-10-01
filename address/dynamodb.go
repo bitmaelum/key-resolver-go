@@ -37,7 +37,7 @@ func NewDynamoDBResolver(client *dynamodb.DynamoDB, tableName string) Repository
 }
 
 func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
-	serial := strconv.FormatUint(uint64(time.Now().Unix()), 10)
+	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
@@ -69,7 +69,7 @@ func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool,
 		Routing:   routing,
 		PublicKey: publicKey,
 		Proof:     proof,
-		Serial:    uint64(time.Now().Unix()),
+		Serial:    uint64(time.Now().UnixNano()),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)
