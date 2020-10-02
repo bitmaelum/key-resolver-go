@@ -29,11 +29,11 @@ func getRoutingHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 		return createError("hash not found", 404)
 	}
 
-	data := jsonOut{
+	data := rawJSONOut{
 		"hash":          info.Hash,
 		"routing":       info.Routing,
 		"public_key":    info.PubKey,
-		"serial_number": strconv.FormatUint(info.Serial, 10),
+		"serial_number": info.Serial,
 	}
 
 	return createOutput(data, 200)

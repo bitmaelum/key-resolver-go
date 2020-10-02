@@ -39,11 +39,11 @@ func getAddressHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 		return createError("hash not found", 404)
 	}
 
-	data := jsonOut{
+	data := rawJSONOut{
 		"hash":          info.Hash,
 		"routing_id":    info.RoutingID,
 		"public_key":    info.PubKey,
-		"serial_number": strconv.FormatUint(info.Serial, 10),
+		"serial_number": info.Serial,
 	}
 
 	return createOutput(data, 200)
@@ -145,7 +145,7 @@ func deleteAddressHashByOrganization(hash string, organizationInfo *organization
 		return createError("error validating address", 401)
 	}
 
-	if !validateSignature(req, currentOrg.PubKey, currentAddress.Hash+strconv.FormatUint(current.Serial, 10)) {
+	if !validateSignature(req, currentOrg.PubKey, currentAddress.Hash+strconv.FormatUint(currentAddress.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
