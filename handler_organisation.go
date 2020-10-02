@@ -34,6 +34,7 @@ func getOrganisationHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.
 		"hash":          info.Hash,
 		"public_key":    info.PubKey,
 		"serial_number": info.Serial,
+		"validations":   info.Validations,
 	}
 
 	return createOutput(data, 200)
