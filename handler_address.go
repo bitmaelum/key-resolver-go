@@ -39,11 +39,11 @@ func getAddressHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 		return createError("hash not found", 404)
 	}
 
-	data := jsonOut{
+	data := rawJSONOut{
 		"hash":          info.Hash,
 		"routing_id":    info.RoutingID,
 		"public_key":    info.PubKey,
-		"serial_number": strconv.Itoa(info.Serial),
+		"serial_number": info.Serial,
 	}
 
 	return createOutput(data, 200)
@@ -104,7 +104,7 @@ func deleteAddressHashByOwner(hash string, req events.APIGatewayV2HTTPRequest) *
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID+strconv.Itoa(current.Serial)) {
+	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -145,7 +145,7 @@ func deleteAddressHashByOrganization(hash string, organizationInfo *organization
 		return createError("error validating address", 401)
 	}
 
-	if !validateSignature(req, currentOrg.PubKey, currentAddress.Hash+strconv.Itoa(currentAddress.Serial)) {
+	if !validateSignature(req, currentOrg.PubKey, currentAddress.Hash+strconv.FormatUint(currentAddress.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -159,7 +159,7 @@ func deleteAddressHashByOrganization(hash string, organizationInfo *organization
 }
 
 func updateAddress(uploadBody addressUploadBody, req events.APIGatewayV2HTTPRequest, current *address.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID+strconv.Itoa(current.Serial)) {
+	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 

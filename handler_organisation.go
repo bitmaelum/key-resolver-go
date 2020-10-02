@@ -34,7 +34,7 @@ func getOrganisationHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.
 		"hash":          info.Hash,
 		"public_key":    info.PubKey,
 		"validations":   info.Validations,
-		"serial_number": strconv.Itoa(info.Serial),
+		"serial_number": info.Serial,
 	}
 
 	return createOutput(data, 200)
@@ -80,7 +80,7 @@ func deleteOrganisationHash(hash string, req events.APIGatewayV2HTTPRequest) *ev
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+strconv.Itoa(current.Serial)) {
+	if !validateSignature(req, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -94,7 +94,7 @@ func deleteOrganisationHash(hash string, req events.APIGatewayV2HTTPRequest) *ev
 }
 
 func updateOrganisation(uploadBody organisationUploadBody, req events.APIGatewayV2HTTPRequest, current *organisation.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+strconv.Itoa(current.Serial)) {
+	if !validateSignature(req, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
