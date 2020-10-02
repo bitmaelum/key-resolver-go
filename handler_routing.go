@@ -75,7 +75,7 @@ func updateRouting(uploadBody routingUploadBody, req events.APIGatewayV2HTTPRequ
 	repo := routing.GetResolveRepository()
 	res, err := repo.Update(current, uploadBody.Routing, uploadBody.PublicKey.String())
 
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while updating: ", 500)
 	}
@@ -87,7 +87,7 @@ func createRouting(hash string, uploadBody routingUploadBody) *events.APIGateway
 	repo := routing.GetResolveRepository()
 	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String())
 
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while creating: ", 500)
 	}
@@ -112,7 +112,7 @@ func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 	}
 
 	res, err := repo.Delete(current.Hash)
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while deleting record", 500)
 	}

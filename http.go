@@ -4,10 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"log"
 	"strings"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 )
 
 type jsonOut map[string]string

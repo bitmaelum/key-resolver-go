@@ -85,7 +85,7 @@ func deleteOrganisationHash(hash string, req events.APIGatewayV2HTTPRequest) *ev
 	}
 
 	res, err := repo.Delete(current.Hash)
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while deleting record", 500)
 	}
@@ -101,7 +101,7 @@ func updateOrganisation(uploadBody organisationUploadBody, req events.APIGateway
 	repo := organisation.GetResolveRepository()
 	res, err := repo.Update(current, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while updating: ", 500)
 	}
@@ -117,7 +117,7 @@ func createOrganisation(hash string, uploadBody organisationUploadBody) *events.
 	repo := organisation.GetResolveRepository()
 	res, err := repo.Create(hash, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while creating: ", 500)
 	}
