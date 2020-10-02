@@ -1,8 +1,8 @@
 package address
 
 import (
-	"time"
 	"testing"
+	"time"
 
 	"github.com/bitmaelum/bitmaelum-suite/pkg/address"
 	bmtest "github.com/bitmaelum/key-resolver-go/testing"

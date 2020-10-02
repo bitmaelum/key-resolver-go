@@ -12,8 +12,8 @@ import (
 )
 
 type routingUploadBody struct {
-	PublicKey bmcrypto.PubKey `json:"public_key"`
-	Routing   string          `json:"routing"`
+	PublicKey *bmcrypto.PubKey `json:"public_key"`
+	Routing   string           `json:"routing"`
 }
 
 func getRoutingHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
@@ -64,11 +64,11 @@ func postRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 	}
 
 	// Try update
-	return updateRouting(*uploadBody, req, current)
+	return updateRouting(*uploadBody, req.Headers["authorization"], current)
 }
 
-func updateRouting(uploadBody routingUploadBody, req events.APIGatewayV2HTTPRequest, current *routing.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
+func updateRouting(uploadBody routingUploadBody, authToken string, current *routing.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
+	if !validateSignature(authToken, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
@@ -107,7 +107,7 @@ func deleteRoutingHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
+	if !validateSignature(req.Headers["authorization"], current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 

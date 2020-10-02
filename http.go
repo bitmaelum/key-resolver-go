@@ -36,13 +36,11 @@ func createOutput(data interface{}, statusCode int) *events.APIGatewayV2HTTPResp
 }
 
 // validateSignature validates a signature based on the authorization header
-func validateSignature(req events.APIGatewayV2HTTPRequest, pubKey, hashData string) bool {
-	log.Printf("req: %#v", req)
-	auth := req.Headers["authorization"]
-	if len(auth) <= 6 || strings.ToUpper(auth[0:7]) != "BEARER " {
+func validateSignature(authToken string, pubKey, hashData string) bool {
+	if len(authToken) <= 6 || strings.ToUpper(authToken[0:7]) != "BEARER " {
 		return false
 	}
-	requestSignature, err := base64.StdEncoding.DecodeString(auth[7:])
+	requestSignature, err := base64.StdEncoding.DecodeString(authToken[7:])
 	if err != nil {
 		log.Printf("err: %s", err)
 		return false

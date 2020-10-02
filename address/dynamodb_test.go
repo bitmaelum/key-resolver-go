@@ -24,14 +24,13 @@ func TestGet(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, ri)
 
-
 	result := dynamodb.GetItemOutput{
 		Item: map[string]*dynamodb.AttributeValue{
-			"hash": { S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2") },
-			"routing": { S: aws.String("12345678") },
-			"public_key": { S: aws.String("pubkey") },
-			"proof": { S: aws.String("proof") },
-			"sn": { N: aws.String("42") },
+			"hash":       {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
+			"routing":    {S: aws.String("12345678")},
+			"public_key": {S: aws.String("pubkey")},
+			"proof":      {S: aws.String("proof")},
+			"sn":         {N: aws.String("42")},
 		},
 	}
 
@@ -49,12 +48,10 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, "pubkey", ri.PubKey)
 	assert.Equal(t, uint64(42), ri.Serial)
 
-
 	// No record found
 	ri, err = resolver.Get("000000000000000000000000000000000000000009c5adaad23fb17572ca1ea2")
 	assert.Error(t, err)
 	assert.Nil(t, ri)
-
 
 	// No record found
 	result = dynamodb.GetItemOutput{
@@ -74,7 +71,7 @@ func TestDelete(t *testing.T) {
 
 	// No record found
 	result := dynamodb.DeleteItemOutput{
-		Attributes:            nil,
+		Attributes: nil,
 	}
 
 	mock.ExpectDeleteItem().ToTable("mock_address_table").WillReturns(result)
@@ -92,7 +89,6 @@ func TestCreate(t *testing.T) {
 	client, mock = dynamock.New()
 	resolver := NewDynamoDBResolver(client, "mock_address_table")
 
-
 	timeNow = func() time.Time {
 		return time.Date(2010, 05, 10, 12, 34, 56, 0, time.UTC)
 	}
@@ -100,11 +96,11 @@ func TestCreate(t *testing.T) {
 	result := dynamodb.PutItemOutput{}
 
 	items := map[string]*dynamodb.AttributeValue{
-		"hash": { S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2") },
-		"proof": { S: aws.String("proof") },
-		"public_key": { S: aws.String("pubkey") },
-		"routing": { S: aws.String("12345678") },
-		"sn": { N: aws.String("1273494896000000000") },
+		"hash":       {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
+		"proof":      {S: aws.String("proof")},
+		"public_key": {S: aws.String("pubkey")},
+		"routing":    {S: aws.String("12345678")},
+		"sn":         {N: aws.String("1273494896000000000")},
 	}
 	mock.ExpectPutItem().ToTable("mock_address_table").WithItems(items).WillReturns(result)
 	ok, err := resolver.Create("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2", "12345678", "pubkey", "proof")
@@ -135,7 +131,6 @@ func TestUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 }
-
 
 func TestResolver(t *testing.T) {
 	r := GetResolveRepository()
