@@ -1,24 +1,26 @@
 package organisation
 
 import (
+	"os"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"os"
 )
 
 // ResolveInfoType returns information found in the resolver repository
 type ResolveInfoType struct {
-	Hash   string
-	PubKey string
-	Proof  string
-	Serial int
+	Hash        string
+	PubKey      string
+	Proof       string
+	Validations []string
+	Serial      uint64
 }
 
 // Repository to resolve records
 type Repository interface {
 	Get(hash string) (*ResolveInfoType, error)
-	Create(hash, publicKey, proof string) (bool, error)
-	Update(info *ResolveInfoType, publicKey, proof string) (bool, error)
+	Create(hash, publicKey, proof string, validations []string) (bool, error)
+	Update(info *ResolveInfoType, publicKey, proof string, validations []string) (bool, error)
 	Delete(hash string) (bool, error)
 }
 

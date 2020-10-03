@@ -2,12 +2,13 @@ package organisation
 
 import (
 	"errors"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"log"
-	"math/rand"
-	"strconv"
 )
 
 type dynamoDbResolver struct {
@@ -20,10 +21,11 @@ var ErrNotFound = errors.New("record not found")
 
 // Record holds a DynamoDB record
 type Record struct {
-	Hash      string `dynamodbav:"hash"`
-	PublicKey string `dynamodbav:"public_key"`
-	Proof     string `dynamodbav:"proof"`
-	Serial    int    `dynamodbav:"sn"`
+	Hash        string   `dynamodbav:"hash"`
+	PublicKey   string   `dynamodbav:"public_key"`
+	Proof       string   `dynamodbav:"proof"`
+	Validations []string `dynamodbav:"validations"`
+	Serial      uint64   `dynamodbav:"sn"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
@@ -34,18 +36,19 @@ func NewDynamoDBResolver(client *dynamodb.DynamoDB, tableName string) Repository
 	}
 }
 
-func (r *dynamoDbResolver) Update(info *ResolveInfoType, publicKey, proof string) (bool, error) {
-	serial := strconv.Itoa(rand.Int())
+func (r *dynamoDbResolver) Update(info *ResolveInfoType, publicKey, proof string, validations []string) (bool, error) {
+	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":pk":  {S: aws.String(publicKey)},
 			":p":   {S: aws.String(proof)},
+			":v":   {SS: aws.StringSlice(validations)},
 			":sn":  {N: aws.String(serial)},
-			":csn": {N: aws.String(strconv.Itoa(info.Serial))},
+			":csn": {N: aws.String(strconv.FormatUint(info.Serial, 10))},
 		},
 		TableName:           aws.String(r.TableName),
-		UpdateExpression:    aws.String("SET proof=:p, public_key=:pk, sn=:sn"),
+		UpdateExpression:    aws.String("SET proof=:p, public_key=:pk, validations=:v, sn=:sn"),
 		ConditionExpression: aws.String("sn = :csn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(info.Hash)},
@@ -61,12 +64,13 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, publicKey, proof string
 	return true, nil
 }
 
-func (r *dynamoDbResolver) Create(hash, publicKey, proof string) (bool, error) {
+func (r *dynamoDbResolver) Create(hash, publicKey, proof string, validations []string) (bool, error) {
 	record := Record{
-		Hash:      hash,
-		PublicKey: publicKey,
-		Proof:     proof,
-		Serial:    rand.Int(),
+		Hash:        hash,
+		PublicKey:   publicKey,
+		Proof:       proof,
+		Validations: validations,
+		Serial:      uint64(time.Now().UnixNano()),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)
@@ -110,10 +114,11 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	}
 
 	return &ResolveInfoType{
-		Hash:   record.Hash,
-		PubKey: record.PublicKey,
-		Proof:  record.Proof,
-		Serial: record.Serial,
+		Hash:        record.Hash,
+		PubKey:      record.PublicKey,
+		Proof:       record.Proof,
+		Validations: record.Validations,
+		Serial:      record.Serial,
 	}, nil
 }
 

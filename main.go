@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 var version = "v0.0.1"
@@ -32,14 +33,6 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	}
 
 	switch req.RouteKey {
-
-	// @TODO: root endpoints are legacy. Remove ASAPs
-	case "GET /{hash}":
-		return getAddressHash(hash, req), nil
-	case "DELETE /{hash}":
-		return deleteAddressHash(hash, req), nil
-	case "POST /{hash}":
-		return postAddressHash(hash, req), nil
 
 	// Address endpoints
 	case "GET /address/{hash}":
