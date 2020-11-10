@@ -4,6 +4,9 @@
 # Default repository
 REPO="github.com/bitmaelum/key-resolver-go"
 
+# Make sure that globstar is active, this allows bash to use ./**/*.go
+SHELL=/bin/bash -O globstar -c
+
 # Set environment variables from GO env if not set explicitly already
 ifndef $(GOPATH)
     GOPATH=$(shell go env GOPATH)
@@ -18,11 +21,15 @@ ifndef $(GOARCH)
     export GOARCH
 endif
 
+# These files are checked for license headers
+LICENSE_CHECK_DIRS=internal/**/*.go cmd/**/*.go
+
 # paths to binaries
 GO_STATCHECK_BIN = $(GOPATH)/bin/staticcheck
 GO_INEFF_BIN = $(GOPATH)/bin/ineffassign
 GO_GOCYCLO_BIN = $(GOPATH)/bin/gocyclo
 GO_GOIMPORTS_BIN = $(GOPATH)/bin/goimports
+GO_LICENSE_BIN = $(GOPATH)/bin/addlicense
 
 # ---------------------------------------------------------------------------
 

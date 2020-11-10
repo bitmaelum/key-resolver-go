@@ -17,16 +17,48 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-package internal
+package address
 
-var version = "0.0.1"
+import (
+	"os"
 
-var Logo = " ____  _ _   __  __            _\n" +
-	"|  _ \\(_) | |  \\/  |          | |   " + version + "\n" +
-	"| |_) |_| |_| \\  / | __ _  ___| |_   _ _ __ ___\n" +
-	"|  _ <| | __| |\\/| |/ _` |/ _ \\ | | | | '_ ` _ \\\n" +
-	"| |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |\n" +
-	"|____/|_|\\__|_|  |_|\\__,_|\\___|_|\\__,_|_| |_| |_|\n" +
-	"\n" +
-	"   P r i v a c y   i s   y o u r s   a g a i n\n" +
-	"\n"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+)
+
+// ResolveInfoType returns information found in the resolver repository
+type ResolveInfoType struct {
+	Hash      string
+	RoutingID string
+	PubKey    string
+	Proof     string
+	Serial    uint64
+}
+
+// Repository to resolve records
+type Repository interface {
+	Get(hash string) (*ResolveInfoType, error)
+	Create(hash, routing, publicKey, proof string) (bool, error)
+	Update(info *ResolveInfoType, routing, publicKey string) (bool, error)
+	Delete(hash string) (bool, error)
+}
+
+var resolver Repository
+
+// GetResolveRepository returns a new repository based on DynamoDB
+func GetResolveRepository() Repository {
+	if resolver != nil {
+		return resolver
+	}
+
+	if os.Getenv("USE_BOLT") == "1" {
+		return NewBoltResolver(os.Getenv("BOLT_DB_FILE"))
+	}
+
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ADDRESS_TABLE_NAME"))
+	return resolver
+}

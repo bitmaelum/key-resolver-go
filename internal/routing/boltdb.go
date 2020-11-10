@@ -1,4 +1,23 @@
-package address
+// Copyright (c) 2020 BitMaelum Authors
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+package routing
 
 import (
 	"encoding/json"
@@ -22,7 +41,7 @@ func NewBoltResolver(p string) Repository {
 
 	return &boltResolver{
 		client:     db,
-		bucketName: "address",
+		bucketName: "routing",
 	}
 }
 
@@ -50,7 +69,7 @@ func (b boltResolver) Get(hash string) (*ResolveInfoType, error) {
 	return rec, nil
 }
 
-func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
+func (b boltResolver) Create(hash, routing, publicKey string) (bool, error) {
 	err := b.client.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists([]byte(b.bucketName))
 		if err != nil {
@@ -58,11 +77,10 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 		}
 
 		rec := &ResolveInfoType{
-			Hash:      hash,
-			RoutingID: routing,
-			PubKey:    publicKey,
-			Proof:     proof,
-			Serial:    uint64(time.Now().UnixNano()),
+			Hash:    hash,
+			Routing: routing,
+			PubKey:  publicKey,
+			Serial:  uint64(time.Now().UnixNano()),
 		}
 		buf, err := json.Marshal(rec)
 		if err != nil {
@@ -80,7 +98,7 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 }
 
 func (b boltResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
-	return b.Create(info.Hash, routing, publicKey, info.Proof)
+	return b.Create(info.Hash, routing, publicKey)
 }
 
 func (b boltResolver) Delete(hash string) (bool, error) {

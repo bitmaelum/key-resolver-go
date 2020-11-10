@@ -17,16 +17,31 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-package internal
+package testing
 
-var version = "0.0.1"
+import (
+	"encoding/json"
+	"io/ioutil"
 
-var Logo = " ____  _ _   __  __            _\n" +
-	"|  _ \\(_) | |  \\/  |          | |   " + version + "\n" +
-	"| |_) |_| |_| \\  / | __ _  ___| |_   _ _ __ ___\n" +
-	"|  _ <| | __| |\\/| |/ _` |/ _ \\ | | | | '_ ` _ \\\n" +
-	"| |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |\n" +
-	"|____/|_|\\__|_|  |_|\\__,_|\\___|_|\\__,_|_| |_| |_|\n" +
-	"\n" +
-	"   P r i v a c y   i s   y o u r s   a g a i n\n" +
-	"\n"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+)
+
+func ReadTestKey(p string) (*bmcrypto.PrivKey, *bmcrypto.PubKey, error) {
+	data, err := ioutil.ReadFile(p)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	type jsonKeyType struct {
+		PrivKey bmcrypto.PrivKey `json:"private_key"`
+		PubKey  bmcrypto.PubKey  `json:"public_key"`
+	}
+
+	v := &jsonKeyType{}
+	err = json.Unmarshal(data, &v)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &v.PrivKey, &v.PubKey, nil
+}
