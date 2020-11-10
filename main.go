@@ -7,19 +7,11 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/bitmaelum/key-resolver-go/internal"
+	"github.com/bitmaelum/key-resolver-go/internal/apigateway"
+	"github.com/bitmaelum/key-resolver-go/internal/handler"
+	"github.com/bitmaelum/key-resolver-go/internal/http"
 )
-
-var version = "v0.0.1"
-
-var logo = "<pre> ____  _ _   __  __            _<br>" +
-	"|  _ \\(_) | |  \\/  |          | |   " + version + "<br>" +
-	"| |_) |_| |_| \\  / | __ _  ___| |_   _ _ __ ___<br>" +
-	"|  _ <| | __| |\\/| |/ _` |/ _ \\ | | | | '_ ` _ \\<br>" +
-	"| |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |<br>" +
-	"|____/|_|\\__|_|  |_|\\__,_|\\___|_|\\__,_|_| |_| |_|<br>" +
-	"<br>" +
-	"   P r i v a c y   i s   y o u r s   a g a i n<br>" +
-	"</pre>"
 
 // HandleRequest checks the incoming route and calls the correct handler for it
 func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
@@ -29,37 +21,44 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 
 	hash := strings.ToLower(req.PathParameters["hash"])
 	if len(hash) != 64 {
-		return createError("Incorrect hash address", 400), nil
+		resp := http.CreateError("Incorrect hash address", 400)
+		return apigateway.HTTPToResp(resp), nil
 	}
 
-	switch req.RouteKey {
+	var httpResp *http.Response
+	httpReq := apigateway.ReqToHTTP(&req)
 
+	switch req.RouteKey {
 	// Address endpoints
 	case "GET /address/{hash}":
-		return getAddressHash(hash, req), nil
+		httpResp = handler.GetAddressHash(hash, *httpReq)
 	case "DELETE /address/{hash}":
-		return deleteAddressHash(hash, req), nil
+		httpResp = handler.DeleteAddressHash(hash, *httpReq)
 	case "POST /address/{hash}":
-		return postAddressHash(hash, req), nil
+		httpResp =  handler.PostAddressHash(hash, *httpReq)
 
 	// Routing endpoints
 	case "GET /routing/{hash}":
-		return getRoutingHash(hash, req), nil
+		httpResp =  handler.GetRoutingHash(hash, *httpReq)
 	case "DELETE /routing/{hash}":
-		return deleteRoutingHash(hash, req), nil
+		httpResp =  handler.DeleteRoutingHash(hash, *httpReq)
 	case "POST /routing/{hash}":
-		return postRoutingHash(hash, req), nil
+		httpResp =  handler.PostRoutingHash(hash, *httpReq)
 
 	// Organisation endpoints
 	case "GET /organisation/{hash}":
-		return getOrganisationHash(hash, req), nil
+		httpResp =  handler.GetOrganisationHash(hash, *httpReq)
 	case "DELETE /organisation/{hash}":
-		return deleteOrganisationHash(hash, req), nil
+		httpResp =  handler.DeleteOrganisationHash(hash, *httpReq)
 	case "POST /organisation/{hash}":
-		return postOrganisationHash(hash, req), nil
+		httpResp =  handler.PostOrganisationHash(hash, *httpReq)
 	}
 
-	return createError("Forbidden", 403), nil
+	if httpResp == nil {
+		httpResp = http.CreateError("Forbidden", 403)
+	}
+
+	return apigateway.HTTPToResp(httpResp), nil
 }
 
 func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
@@ -69,7 +68,7 @@ func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse
 	resp := &events.APIGatewayV2HTTPResponse{
 		StatusCode: 200,
 		Headers:    headers,
-		Body:       logo,
+		Body:       "<pre>" + strings.Replace(internal.Logo, "\n", "<br>", -1) + "</pre>",
 	}
 
 	return resp
