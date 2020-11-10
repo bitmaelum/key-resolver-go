@@ -31,6 +31,10 @@ func GetResolveRepository() Repository {
 		return resolver
 	}
 
+	if os.Getenv("USE_BOLT") == "1" {
+		return NewBoltResolver(os.Getenv("BOLT_DB_FILE"))
+	}
+
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
