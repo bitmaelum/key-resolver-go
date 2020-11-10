@@ -21,6 +21,14 @@ ifndef $(GOARCH)
     export GOARCH
 endif
 
+APPS := lambda bm-keyresolver
+CROSS_APPS := $(foreach app,$(APPS),cross-$(app))
+
+# Platforms we can build on for cross platform. Should be in <os>-<arch> notation
+PLATFORMS := windows-amd64 linux-amd64 darwin-amd64
+BUILD_ALL_PLATFORMS := $(foreach platform,$(PLATFORMS),build-all-$(platform))
+
+
 # These files are checked for license headers
 LICENSE_CHECK_DIRS=internal/**/*.go cmd/**/*.go
 
@@ -81,24 +89,43 @@ test_unit:
 clean: ## Clean releases
 	go clean
 
-build-bm-keyresolve:
-	$(info -   Building app bm-keyresolve)
-	go build $(LD_FLAGS) -o release/bm-keyresolve cmd/bm-keyresolve/main.go
-
-build-key-resolver-lambda:
-	$(info -   Building app key-resolver-lambda)
-	go build $(LD_FLAGS) -o release/key-resolver-lambda cmd/lambda/main.go
-
+# Build default OS/ARCH apps in root release directory
+$(APPS):
+	$(info -   Building app $@)
+	go build $(LD_FLAGS) -o release/$@ $(REPO)/cmd/$@
 
 fix-licenses: ## Adds / updates license information in source files
 	$(GO_LICENSE_BIN) -c "BitMaelum Authors" -l mit -y 2020 -v $(LICENSE_CHECK_DIRS)
 
-info:
-	$(info Building BitMaelum key resolver)
+# Build GOOS/GOARCH apps in separate release directory
+$(CROSS_APPS):
+	$(info -   Building app $(subst cross-,,$@) (${GOOS}-${GOARCH}))
+	go build $(LD_FLAGS) -o release/${GOOS}-${GOARCH}/$(subst cross-,,$@) $(REPO)/cmd/$(subst cross-,,$@)
 
-build: info build-bm-keyresolve build-key-resolver-lambda
+$(BUILD_ALL_PLATFORMS): $(CROSS_APPS)
+
+$(PLATFORMS):
+	$(eval GOOS=$(firstword $(subst -, ,$@)))
+	$(eval GOARCH=$(lastword $(subst -, ,$@)))
+	$(info - Cross platform build $(GOOS) / $(GOARCH))
+	make -j build-all-$(GOOS)-$(GOARCH)
+
+cross-info:
+	$(info Cross building BitMaelum keyresolver apps)
+
+info:
+	$(info Building BitMaelum keyresolver)
+
+build-all: cross-info $(PLATFORMS) ## Build all cross-platform binaries
+
+build: info $(APPS) ## Build default platform binaries
 
 all: test build ## Run tests and build default platform binaries
+
+docker: ## Create docker image and push to dockerhub
+	$(info Building BitMaelum docker image)
+	docker build -t bitmaelum/bitmaelum-keyresolver:latest .
+	docker push bitmaelum/bitmaelum-keyresolver:latest
 
 help: ## Display available commands
 	echo "BitMaelum make commands"
