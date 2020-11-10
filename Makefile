@@ -30,6 +30,7 @@ GO_GOIMPORTS_BIN = $(GOPATH)/bin/goimports
 $(GO_TEST_BIN):
 	go get -u honnef.co/go/tools/cmd/staticcheck
 	go get -u github.com/gordonklaus/ineffassign
+	go get -u github.com/google/addlicense
 	go get -u github.com/fzipp/gocyclo
 	go get -u golang.org/x/tools/cmd/goimports
 
@@ -38,11 +39,17 @@ lint:
 	$(GO_GOIMPORTS_BIN) -w  --format-only .
 
 ## Runs all tests for the whole repository
-test: $(GO_TEST_BIN) test_goimports test_vet test_staticcheck test_ineffassign test_gocyclo test_unit
+test: $(GO_TEST_BIN) test_goimports test_license test_vet test_staticcheck test_ineffassign test_gocyclo test_unit
 
 test_goimports:
 	echo "goimports"
 	$(GO_GOIMPORTS_BIN) -l .
+
+
+test_license:
+	echo "Check licenses"
+	shopt -s globstar
+	$(GO_LICENSE_BIN) -c "BitMaelum Authors" -l mit -y 2020 -check $(LICENSE_CHECK_DIRS)
 
 test_vet:
 	echo "Check vet"
@@ -67,15 +74,22 @@ test_unit:
 clean: ## Clean releases
 	go clean
 
-# Build default OS/ARCH apps in root release directory
-build-key-resolver:
-	$(info -   Building app $@)
-	go build $(LD_FLAGS) .
+build-bm-keyresolve:
+	$(info -   Building app bm-keyresolve)
+	go build $(LD_FLAGS) -o release/bm-keyresolve cmd/bm-keyresolve/main.go
+
+build-key-resolver-lambda:
+	$(info -   Building app key-resolver-lambda)
+	go build $(LD_FLAGS) -o release/key-resolver-lambda cmd/lambda/main.go
+
+
+fix-licenses: ## Adds / updates license information in source files
+	$(GO_LICENSE_BIN) -c "BitMaelum Authors" -l mit -y 2020 -v $(LICENSE_CHECK_DIRS)
 
 info:
 	$(info Building BitMaelum key resolver)
 
-build: info build-key-resolver
+build: info build-bm-keyresolve build-key-resolver-lambda
 
 all: test build ## Run tests and build default platform binaries
 

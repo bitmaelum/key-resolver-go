@@ -13,9 +13,9 @@ import (
 )
 
 type Request struct {
-	Method string
-	URL string
-	Body string
+	Method  string
+	URL     string
+	Body    string
 	Headers map[string][]string
 }
 

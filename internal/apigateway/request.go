@@ -7,19 +7,19 @@ import (
 
 // ReqToHTTP converts a api gateway http request to our internal http request
 func ReqToHTTP(req *events.APIGatewayV2HTTPRequest) *http.Request {
- 	httpReq := http.Request{
-	    Method:  req.RequestContext.HTTP.Method,
-	    URL:     req.RequestContext.HTTP.Path,
-	    Body:    req.Body,
-	    Headers: make(map[string][]string),
-    }
+	httpReq := http.Request{
+		Method:  req.RequestContext.HTTP.Method,
+		URL:     req.RequestContext.HTTP.Path,
+		Body:    req.Body,
+		Headers: make(map[string][]string),
+	}
 
- 	// Add headers
- 	for k, v := range req.Headers {
-	    httpReq.Headers[k] = []string{v}
-    }
+	// Add headers
+	for k, v := range req.Headers {
+		httpReq.Headers[k] = []string{v}
+	}
 
-    return &httpReq
+	return &httpReq
 }
 
 // HTTPToResp converts an internal http response to an api gateway http response
@@ -32,5 +32,3 @@ func HTTPToResp(resp *http.Response) *events.APIGatewayV2HTTPResponse {
 		Body: resp.Body,
 	}
 }
-
-

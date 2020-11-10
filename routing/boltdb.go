@@ -13,7 +13,6 @@ type boltResolver struct {
 	bucketName string
 }
 
-
 // NewBoltResolver returns a new resolver based on BoltDB
 func NewBoltResolver(p string) Repository {
 	db, err := bolt.Open(p, 0600, nil)

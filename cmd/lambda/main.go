@@ -35,23 +35,23 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	case "DELETE /address/{hash}":
 		httpResp = handler.DeleteAddressHash(hash, *httpReq)
 	case "POST /address/{hash}":
-		httpResp =  handler.PostAddressHash(hash, *httpReq)
+		httpResp = handler.PostAddressHash(hash, *httpReq)
 
 	// Routing endpoints
 	case "GET /routing/{hash}":
-		httpResp =  handler.GetRoutingHash(hash, *httpReq)
+		httpResp = handler.GetRoutingHash(hash, *httpReq)
 	case "DELETE /routing/{hash}":
-		httpResp =  handler.DeleteRoutingHash(hash, *httpReq)
+		httpResp = handler.DeleteRoutingHash(hash, *httpReq)
 	case "POST /routing/{hash}":
-		httpResp =  handler.PostRoutingHash(hash, *httpReq)
+		httpResp = handler.PostRoutingHash(hash, *httpReq)
 
 	// Organisation endpoints
 	case "GET /organisation/{hash}":
-		httpResp =  handler.GetOrganisationHash(hash, *httpReq)
+		httpResp = handler.GetOrganisationHash(hash, *httpReq)
 	case "DELETE /organisation/{hash}":
-		httpResp =  handler.DeleteOrganisationHash(hash, *httpReq)
+		httpResp = handler.DeleteOrganisationHash(hash, *httpReq)
 	case "POST /organisation/{hash}":
-		httpResp =  handler.PostOrganisationHash(hash, *httpReq)
+		httpResp = handler.PostOrganisationHash(hash, *httpReq)
 	}
 
 	if httpResp == nil {
