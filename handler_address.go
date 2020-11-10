@@ -16,6 +16,9 @@ import (
 )
 
 type addressUploadBody struct {
+	UserHash  string                  `json:"user_hash"`
+	OrgHash   string                  `json:"org_hash"`
+	OrgToken  string                  `json:"org_token,omitempty"`
 	PublicKey bmcrypto.PubKey         `json:"public_key"`
 	RoutingID string                  `json:"routing_id"`
 	Proof     proofofwork.ProofOfWork `json:"proof"`
@@ -49,9 +52,9 @@ func getAddressHash(hash string, _ events.APIGatewayV2HTTPRequest) *events.APIGa
 	return createOutput(data, 200)
 }
 
-func postAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+func postAddressHash(addrHash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
 	repo := address.GetResolveRepository()
-	current, err := repo.Get(hash)
+	current, err := repo.Get(addrHash)
 	if err != nil && err != address.ErrNotFound {
 		log.Print(err)
 		return createError("error while posting record", 500)
@@ -64,20 +67,25 @@ func postAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.AP
 		return createError("invalid data", 400)
 	}
 
-	if !validateAddressBody(*uploadBody) {
+	if !validateAddressBody(addrHash, *uploadBody) {
 		return createError("invalid data", 400)
+	}
+
+	// Check org token
+	if uploadBody.OrgToken != "" && !validateOrgToken(uploadBody.OrgToken, addrHash, uploadBody.OrgHash, uploadBody.RoutingID) {
+		return createError("cannot validate organisation token", 400)
 	}
 
 	if current == nil {
 		// Does not exist yet
-		return createAddress(hash, *uploadBody)
+		return createAddress(addrHash, *uploadBody)
 	}
 
 	// Try update
 	return updateAddress(*uploadBody, req, current)
 }
 
-func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+func deleteAddressHash(addrHash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
 	requestBody := &organizationRequestBody{}
 	err := json.Unmarshal([]byte(req.Body), requestBody)
 	if err != nil {
@@ -86,15 +94,15 @@ func deleteAddressHash(hash string, req events.APIGatewayV2HTTPRequest) *events.
 	}
 
 	if requestBody.OrganizationHash != "" {
-		return deleteAddressHashByOrganization(hash, requestBody, req)
+		return deleteAddressHashByOrganization(addrHash, requestBody, req)
 	}
 
-	return deleteAddressHashByOwner(hash, req)
+	return deleteAddressHashByOwner(addrHash, req)
 }
 
-func deleteAddressHashByOwner(hash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+func deleteAddressHashByOwner(addrHash string, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
 	repo := address.GetResolveRepository()
-	current, err := repo.Get(hash)
+	current, err := repo.Get(addrHash)
 	if err != nil {
 		log.Print(err)
 		return createError("error while fetching record", 500)
@@ -104,12 +112,12 @@ func deleteAddressHashByOwner(hash string, req events.APIGatewayV2HTTPRequest) *
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
+	if !validateSignature(req.Headers["authorization"], current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
 	res, err := repo.Delete(current.Hash)
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while deleting record", 500)
 	}
@@ -117,9 +125,9 @@ func deleteAddressHashByOwner(hash string, req events.APIGatewayV2HTTPRequest) *
 	return createOutput("ok", 200)
 }
 
-func deleteAddressHashByOrganization(hash string, organizationInfo *organizationRequestBody, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+func deleteAddressHashByOrganization(addrHash string, organizationInfo *organizationRequestBody, req events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
 	addressRepo := address.GetResolveRepository()
-	currentAddress, err := addressRepo.Get(hash)
+	currentAddress, err := addressRepo.Get(addrHash)
 	if err != nil {
 		log.Print(err)
 		return createError("error while fetching address record", 500)
@@ -140,17 +148,17 @@ func deleteAddressHashByOrganization(hash string, organizationInfo *organization
 		return createError("cannot find organization record", 404)
 	}
 
-	//Checks if the userhash+orghash matches the hash to be deleted
-	if !pkgAddress.VerifyHash(hash, organizationInfo.UserHash, organizationInfo.OrganizationHash) {
+	// Checks if the userhash+orghash matches the hash to be deleted
+	if !pkgAddress.VerifyHash(addrHash, organizationInfo.UserHash, organizationInfo.OrganizationHash) {
 		return createError("error validating address", 401)
 	}
 
-	if !validateSignature(req, currentOrg.PubKey, currentAddress.Hash+strconv.FormatUint(currentAddress.Serial, 10)) {
+	if !validateSignature(req.Headers["authorization"], currentOrg.PubKey, currentAddress.Hash+strconv.FormatUint(currentAddress.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
 	res, err := addressRepo.Delete(currentAddress.Hash)
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while deleting address record", 500)
 	}
@@ -159,14 +167,14 @@ func deleteAddressHashByOrganization(hash string, organizationInfo *organization
 }
 
 func updateAddress(uploadBody addressUploadBody, req events.APIGatewayV2HTTPRequest, current *address.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
+	if !validateSignature(req.Headers["authorization"], current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
 	repo := address.GetResolveRepository()
 	res, err := repo.Update(current, uploadBody.RoutingID, uploadBody.PublicKey.String())
 
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while updating: ", 500)
 	}
@@ -174,14 +182,14 @@ func updateAddress(uploadBody addressUploadBody, req events.APIGatewayV2HTTPRequ
 	return createOutput("updated", 200)
 }
 
-func createAddress(hash string, uploadBody addressUploadBody) *events.APIGatewayV2HTTPResponse {
+func createAddress(addrHash string, uploadBody addressUploadBody) *events.APIGatewayV2HTTPResponse {
 	if !uploadBody.Proof.IsValid() {
 		return createError("incorrect proof-of-work", 401)
 	}
 
 	repo := address.GetResolveRepository()
-	res, err := repo.Create(hash, uploadBody.RoutingID, uploadBody.PublicKey.String(), uploadBody.Proof.String())
-	if err != nil || res == false {
+	res, err := repo.Create(addrHash, uploadBody.RoutingID, uploadBody.PublicKey.String(), uploadBody.Proof.String())
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while creating: ", 500)
 	}
@@ -189,8 +197,24 @@ func createAddress(hash string, uploadBody addressUploadBody) *events.APIGateway
 	return createOutput("created", 201)
 }
 
-func validateAddressBody(body addressUploadBody) bool {
+// Validate the incoming body
+func validateAddressBody(addrHash string, body addressUploadBody) bool {
 	// PubKey and Pow are already validated through the JSON marshalling
+
+	// Check if the user + org hash matches the address hash
+	if !pkgAddress.VerifyHash(addrHash, body.UserHash, body.OrgHash) {
+		return false
+	}
+
+	// When specifying an organisation, we need an organisation token
+	if body.OrgHash != "" && body.OrgToken == "" {
+		return false
+	}
+
+	// Can't specify token when no org is needed
+	if body.OrgHash == "" && body.OrgToken != "" {
+		return false
+	}
 
 	// Check routing
 	routing := strings.ToLower(body.RoutingID)
@@ -200,9 +224,26 @@ func validateAddressBody(body addressUploadBody) bool {
 		return false
 	}
 
-	if re.Match([]byte(routing)) == false {
+	return re.Match([]byte(routing))
+}
+
+// Validate the organisation token
+func validateOrgToken(token, addr string, orgHash string, routingID string) bool {
+	addrHash, err := pkgAddress.NewHashFromHash(addr)
+	if err != nil {
 		return false
 	}
 
-	return true
+	// Load org Info
+	repo := organisation.GetResolveRepository()
+	oi, err := repo.Get(orgHash)
+	if err != nil {
+		return false
+	}
+	pubKey, err := bmcrypto.NewPubKey(oi.PubKey)
+	if err != nil {
+		return false
+	}
+
+	return address.VerifyInviteToken(token, addrHash, routingID, *pubKey)
 }

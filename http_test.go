@@ -1,9 +1,10 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const (
@@ -45,45 +46,45 @@ func TestValidateSignature(t *testing.T) {
 			"authorization": "Bearer " + Signature,
 		},
 	}
-	assert.True(t, validateSignature(req, PubKeyData, hashData))
+	assert.True(t, validateSignature(req.Headers["authorization"], PubKeyData, hashData))
 
 	req = events.APIGatewayV2HTTPRequest{
 		Headers: map[string]string{
 			"authorization": "Bearer " + Signature,
 		},
 	}
-	assert.False(t, validateSignature(req, "false data", hashData))
+	assert.False(t, validateSignature(req.Headers["authorization"], "false data", hashData))
 
 	req = events.APIGatewayV2HTTPRequest{
 		Headers: map[string]string{
 			"authorization": "Bearer " + Signature,
 		},
 	}
-	assert.False(t, validateSignature(req, PubKeyData, hashData+"falsefalse"))
+	assert.False(t, validateSignature(req.Headers["authorization"], PubKeyData, hashData+"falsefalse"))
 
 	req = events.APIGatewayV2HTTPRequest{
 		Headers: map[string]string{
 			"authorization": "ADSAFAFAF",
 		},
 	}
-	assert.False(t, validateSignature(req, PubKeyData, hashData))
+	assert.False(t, validateSignature(req.Headers["authorization"], PubKeyData, hashData))
 
 	req = events.APIGatewayV2HTTPRequest{
 		Headers: map[string]string{
 			"authorization": "Bearer *&^(&^%(^&#@%$%)@$%@!$^@$^)@!",
 		},
 	}
-	assert.False(t, validateSignature(req, PubKeyData, hashData))
+	assert.False(t, validateSignature(req.Headers["authorization"], PubKeyData, hashData))
 
 	req = events.APIGatewayV2HTTPRequest{
 		Headers: map[string]string{
 			"authorization": "",
 		},
 	}
-	assert.False(t, validateSignature(req, PubKeyData, hashData))
+	assert.False(t, validateSignature(req.Headers["authorization"], PubKeyData, hashData))
 
 	req = events.APIGatewayV2HTTPRequest{
 		Headers: map[string]string{},
 	}
-	assert.False(t, validateSignature(req, PubKeyData, hashData))
+	assert.False(t, validateSignature(req.Headers["authorization"], PubKeyData, hashData))
 }

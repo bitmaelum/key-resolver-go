@@ -9,10 +9,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
 
 type dynamoDbResolver struct {
-	C         *dynamodb.DynamoDB
+	Dyna      dynamodbiface.DynamoDBAPI
 	TableName string
 }
 
@@ -29,9 +30,9 @@ type Record struct {
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
-func NewDynamoDBResolver(client *dynamodb.DynamoDB, tableName string) Repository {
+func NewDynamoDBResolver(client dynamodbiface.DynamoDBAPI, tableName string) Repository {
 	return &dynamoDbResolver{
-		C:         client,
+		Dyna:      client,
 		TableName: tableName,
 	}
 }
@@ -54,7 +55,7 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 		},
 	}
 
-	_, err := r.C.UpdateItem(input)
+	_, err := r.Dyna.UpdateItem(input)
 	if err != nil {
 		log.Print(err)
 		return false, err
@@ -69,7 +70,7 @@ func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool,
 		Routing:   routing,
 		PublicKey: publicKey,
 		Proof:     proof,
-		Serial:    uint64(time.Now().UnixNano()),
+		Serial:    uint64(timeNow().UnixNano()),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)
@@ -83,12 +84,12 @@ func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool,
 		TableName: aws.String(r.TableName),
 	}
 
-	_, err = r.C.PutItem(input)
+	_, err = r.Dyna.PutItem(input)
 	return err == nil, err
 }
 
 func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
-	result, err := r.C.GetItem(&dynamodb.GetItemInput{
+	result, err := r.Dyna.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},
@@ -122,7 +123,7 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 }
 
 func (r *dynamoDbResolver) Delete(hash string) (bool, error) {
-	_, err := r.C.DeleteItem(&dynamodb.DeleteItemInput{
+	_, err := r.Dyna.DeleteItem(&dynamodb.DeleteItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},

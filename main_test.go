@@ -1,9 +1,10 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestHandleRequestIndex(t *testing.T) {

@@ -9,6 +9,8 @@
 
 # Key resolver
 
+[![codecov](https://codecov.io/gh/bitmaelum/key-resolver-go/branch/develop/graph/badge.svg?token=IHXRZZO8KQ)](undefined)
+
 This repository holds the (centralized) account and routing resolver for BitMaelum.
 
 Its purpose is for users and mail servers to upload they public key and routing information. This will be used by 

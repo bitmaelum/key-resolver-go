@@ -80,12 +80,12 @@ func deleteOrganisationHash(hash string, req events.APIGatewayV2HTTPRequest) *ev
 		return createError("cannot find record", 404)
 	}
 
-	if !validateSignature(req, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
+	if !validateSignature(req.Headers["authorization"], current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
 	res, err := repo.Delete(current.Hash)
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while deleting record", 500)
 	}
@@ -94,14 +94,14 @@ func deleteOrganisationHash(hash string, req events.APIGatewayV2HTTPRequest) *ev
 }
 
 func updateOrganisation(uploadBody organisationUploadBody, req events.APIGatewayV2HTTPRequest, current *organisation.ResolveInfoType) *events.APIGatewayV2HTTPResponse {
-	if !validateSignature(req, current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
+	if !validateSignature(req.Headers["authorization"], current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return createError("unauthenticated", 401)
 	}
 
 	repo := organisation.GetResolveRepository()
 	res, err := repo.Update(current, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while updating: ", 500)
 	}
@@ -117,7 +117,7 @@ func createOrganisation(hash string, uploadBody organisationUploadBody) *events.
 	repo := organisation.GetResolveRepository()
 	res, err := repo.Create(hash, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
-	if err != nil || res == false {
+	if err != nil || !res {
 		log.Print(err)
 		return createError("error while creating: ", 500)
 	}
