@@ -31,17 +31,58 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 )
 
+type Headers struct {
+	Headers map[string]string
+}
+
+func NewHeaders() Headers {
+	return Headers{
+		Headers: make(map[string]string),
+	}
+}
+
+func (h *Headers) Set(key, value string) {
+	h.Headers[strings.ToLower(key)] = value
+}
+
+func (h *Headers) Get(key string) string {
+	return h.Headers[strings.ToLower(key)]
+}
+
+func (h *Headers) Has(key string) bool {
+	_, ok := h.Headers[strings.ToLower(key)]
+
+	return ok
+}
+
 type Request struct {
 	Method  string
 	URL     string
 	Body    string
-	Headers map[string][]string
+	Headers Headers
+}
+
+func NewRequest(method, url, body string) Request {
+	return Request{
+		Method:  method,
+		URL:     url,
+		Body:    body,
+		Headers: NewHeaders(),
+	}
 }
 
 type Response struct {
 	Body       string
 	StatusCode int
-	Headers    map[string][]string
+	Headers    Headers
+}
+
+func NewResponse(statusCode int, body string) Response {
+	return Response{
+		Body:       body,
+		StatusCode: statusCode,
+		Headers:    NewHeaders(),
+	}
 }
 
 type JsonOut map[string]string
@@ -60,21 +101,19 @@ func CreateError(msg string, statusCode int) *Response {
 func CreateOutput(data interface{}, statusCode int) *Response {
 	body, _ := json.MarshalIndent(data, "", "  ")
 
-	h := make(map[string][]string)
-	h["Content-Type"] = []string{"application/json"}
+	resp := NewResponse(statusCode, string(body))
+	resp.Headers.Set("content-type", "application/json")
 
-	return &Response{
-		StatusCode: statusCode,
-		Headers:    h,
-		Body:       string(body),
-	}
+	return &resp
 }
 
 // validateSignature validates a signature based on the authorization header
 func (r Request) ValidateSignature(pubKey, hashData string) bool {
-	authTokens, ok := r.Headers["Authorization"]
-	authToken := authTokens[0]
-	if !ok || len(authToken) <= 6 || strings.ToUpper(authToken[0:7]) != "BEARER " {
+	if !r.Headers.Has("authorization") {
+		return false
+	}
+	authToken := r.Headers.Get("authorization")
+	if len(authToken) <= 6 || strings.ToUpper(authToken[0:7]) != "BEARER " {
 		return false
 	}
 	requestSignature, err := base64.StdEncoding.DecodeString(authToken[7:])
@@ -103,18 +142,15 @@ func (r Request) ValidateSignature(pubKey, hashData string) bool {
 func NetReqToReq(r http.Request) Request {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return Request{}
+		return NewRequest("", "", "")
 	}
 
-	h := make(map[string][]string)
+	req := NewRequest(r.Method, r.URL.String(), string(b))
+
+	// Add headers
 	for k, v := range r.Header {
-		h[k] = v
+		req.Headers.Set(k, v[0])
 	}
 
-	return Request{
-		Method:  r.Method,
-		URL:     r.URL.String(),
-		Body:    string(b),
-		Headers: h,
-	}
+	return req
 }

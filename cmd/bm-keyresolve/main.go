@@ -47,9 +47,8 @@ func requestWrapper(f func(string, http.Request) *http.Response) func(net_http.R
 
 		// Write response to output
 		w.WriteHeader(resp.StatusCode)
-		for k, v := range resp.Headers {
-			// @TODO: we are only setting the first value
-			w.Header().Set(k, v[0])
+		for k, v := range resp.Headers.Headers {
+			w.Header().Set(k, v)
 		}
 		_, _ = w.Write([]byte(resp.Body))
 	}
@@ -59,11 +58,10 @@ func getLogo(_ string, _ http.Request) *http.Response {
 	headers := map[string][]string{}
 	headers["Content-Type"] = []string{"application/json"}
 
-	return &http.Response{
-		StatusCode: 200,
-		Headers:    headers,
-		Body:       internal.Logo,
-	}
+	resp := http.NewResponse(200, internal.Logo)
+	resp.Headers.Set("content-type", "application/json")
+
+	return &resp
 }
 
 func main() {

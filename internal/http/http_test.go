@@ -35,12 +35,12 @@ func TestCreateError(t *testing.T) {
 	res := CreateError("foobar", 400)
 	assert.Equal(t, 400, res.StatusCode)
 	assert.Equal(t, "{\n  \"error\": \"foobar\"\n}", res.Body)
-	assert.Len(t, res.Headers, 1)
+	assert.Len(t, res.Headers.Headers, 1)
 
 	res = CreateError("", 501)
 	assert.Equal(t, 501, res.StatusCode)
 	assert.Equal(t, "{\n  \"error\": \"\"\n}", res.Body)
-	assert.Len(t, res.Headers, 1)
+	assert.Len(t, res.Headers.Headers, 1)
 }
 
 func TestCreateOutput(t *testing.T) {
@@ -52,40 +52,34 @@ func TestCreateOutput(t *testing.T) {
 	res := CreateOutput(data, 200)
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t, "{\n  \"bar\": \"foo\",\n  \"foo\": \"123\"\n}", res.Body)
-	assert.Len(t, res.Headers, 1)
+	assert.Len(t, res.Headers.Headers, 1)
 }
 
 func TestValidateSignature(t *testing.T) {
 	var req Request
 	var hashData = "foobar data test"
 
-	req = Request{}
-	req.Headers = make(map[string]string)
-	req.Headers["Authorization"] = "Bearer " + Signature
+	req = NewRequest("GET", "/", "")
+	req.Headers.Set("authorization", "Bearer "+Signature)
 	assert.True(t, req.ValidateSignature(PubKeyData, hashData))
 
-	req = Request{}
-	req.Headers = make(map[string]string)
-	req.Headers["Authorization"] = "Bearer " + Signature
+	req = NewRequest("GET", "/", "")
+	req.Headers.Set("authorization", "Bearer "+Signature)
 	assert.False(t, req.ValidateSignature("false data", hashData))
 
-	req = Request{}
-	req.Headers = make(map[string]string)
-	req.Headers["Authorization"] = "Bearer " + Signature
+	req = NewRequest("GET", "/", "")
+	req.Headers.Set("authorization", "Bearer "+Signature)
 	assert.False(t, req.ValidateSignature(PubKeyData, hashData+"falsefalse"))
 
-	req = Request{}
-	req.Headers = make(map[string]string)
-	req.Headers["Authorization"] = "ADSAFAFAF"
+	req = NewRequest("GET", "/", "")
+	req.Headers.Set("authorization", "ADSAFAFAF")
 	assert.False(t, req.ValidateSignature(PubKeyData, hashData))
 
-	req = Request{}
-	req.Headers = make(map[string]string)
-	req.Headers["Authorization"] = "Bearer *&^(&^%(^&#@%$%)@$%@!$^@$^)@!"
+	req = NewRequest("GET", "/", "")
+	req.Headers.Set("authorization", "Bearer *&^(&^%(^&#@%$%)@$%@!$^@$^)@!")
 	assert.False(t, req.ValidateSignature(PubKeyData, hashData))
 
-	req = Request{}
-	req.Headers = make(map[string]string)
-	req.Headers["Authorization"] = ""
+	req = NewRequest("GET", "/", "")
+	req.Headers.Set("authorization", "")
 	assert.False(t, req.ValidateSignature(PubKeyData, hashData))
 }

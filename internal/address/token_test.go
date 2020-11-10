@@ -24,14 +24,14 @@ import (
 	"time"
 
 	"github.com/bitmaelum/bitmaelum-suite/pkg/address"
-	bmtest "github.com/bitmaelum/key-resolver-go/internal/testing"
+	testing2 "github.com/bitmaelum/key-resolver-go/internal/testing"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestToken(t *testing.T) {
-	_, pubKey, err := bmtest.ReadTestKey("../testdata/key-1.json")
+	_, pubKey, err := testing2.ReadTestKey("../../testdata/key-1.json")
 	assert.NoError(t, err)
-	_, pubKey2, err := bmtest.ReadTestKey("../testdata/key-2.json")
+	_, pubKey2, err := testing2.ReadTestKey("../../testdata/key-2.json")
 	assert.NoError(t, err)
 
 	timeNow = func() time.Time {
