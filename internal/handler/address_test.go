@@ -73,6 +73,13 @@ func TestAddress(t *testing.T) {
 	assert.Equal(t, 401, res.StatusCode)
 	assert.Contains(t, res.Body, "incorrect proof-of-work")
 
+	// Insert with incorrect proof-of-work
+	pow2 = proofofwork.New(22, "somethingelse", 1111111)
+	res = insertAddressRecord(*addr, "../../testdata/key-3.json", fakeRoutingId.String(), "", pow2)
+	assert.NotNil(t, res)
+	assert.Equal(t, 401, res.StatusCode)
+	assert.Contains(t, res.Body, "incorrect proof-of-work")
+
 	// Insert with too small proof of work
 	pow2 = proofofwork.New(5, addr.Hash().String(), 16)
 	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
@@ -95,6 +102,94 @@ func TestAddress(t *testing.T) {
 	assert.Equal(t, "ed25519 MCowBQYDK2VwAyEA0zlS1exf5ZbxneUfQHbiiwPkDOJoXlkAQolRRGD1K4g=", info.PubKey)
 	assert.Equal(t, "f5c62bf28bb19b66d67d869acb7255168fe54413442dae0c5bdd626b8eac927e", info.RoutingID)
 	assert.Equal(t, uint64(1270643696000000000), info.Serial)
+}
+
+func TestValidateVerifyHashFailed(t *testing.T) {
+	_, pubKey, _ := testing2.ReadTestKey("../../testdata/key-3.json")
+
+	addr, _ := pkgAddress.NewAddress("example!")
+	pow := proofofwork.New(22, addr.Hash().String(), 1540921)
+
+	b, _ := json.Marshal(addressUploadBody{
+		UserHash:  "bar",
+		OrgHash:   "foo",
+		OrgToken:  "",
+		PublicKey: pubKey,
+		RoutingID: "12345",
+		Proof:     pow,
+	})
+
+	req := http.NewRequest("GET", "/", string(b))
+	res := PostAddressHash(addr.Hash(), req)
+	assert.NotNil(t, res)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Contains(t, res.Body, "invalid data")
+}
+
+func TestValidateVerifyNeedTokenForOrg(t *testing.T) {
+	_, pubKey, _ := testing2.ReadTestKey("../../testdata/key-3.json")
+
+	addr, _ := pkgAddress.NewAddress("foo@bar!")
+	pow := proofofwork.New(22, addr.Hash().String(), 2021455)
+
+	b, _ := json.Marshal(addressUploadBody{
+		UserHash:  addr.LocalHash(),
+		OrgHash:   addr.OrgHash(),
+		OrgToken:  "",
+		PublicKey: pubKey,
+		RoutingID: "12345",
+		Proof:     pow,
+	})
+
+	req := http.NewRequest("GET", "/", string(b))
+	res := PostAddressHash(addr.Hash(), req)
+	assert.NotNil(t, res)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Contains(t, res.Body, "invalid data")
+}
+
+func TestValidateVerifyNoTokenForNonOrg(t *testing.T) {
+	_, pubKey, _ := testing2.ReadTestKey("../../testdata/key-3.json")
+
+	addr, _ := pkgAddress.NewAddress("example!")
+	pow := proofofwork.New(22, addr.Hash().String(), 1540921)
+
+	b, _ := json.Marshal(addressUploadBody{
+		UserHash:  addr.LocalHash(),
+		OrgHash:   addr.OrgHash(),
+		OrgToken:  "foobartoken",
+		PublicKey: pubKey,
+		RoutingID: "12345",
+		Proof:     pow,
+	})
+
+	req := http.NewRequest("GET", "/", string(b))
+	res := PostAddressHash(addr.Hash(), req)
+	assert.NotNil(t, res)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Contains(t, res.Body, "invalid data")
+}
+
+func TestValidateRoutingIDFailed(t *testing.T) {
+	_, pubKey, _ := testing2.ReadTestKey("../../testdata/key-3.json")
+
+	addr, _ := pkgAddress.NewAddress("example!")
+	pow := proofofwork.New(22, addr.Hash().String(), 1540921)
+
+	b, _ := json.Marshal(addressUploadBody{
+		UserHash:  addr.LocalHash(),
+		OrgHash:   addr.OrgHash(),
+		OrgToken:  "",
+		PublicKey: pubKey,
+		RoutingID: "incorrect-routing-id",
+		Proof:     pow,
+	})
+
+	req := http.NewRequest("GET", "/", string(b))
+	res := PostAddressHash(addr.Hash(), req)
+	assert.NotNil(t, res)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Contains(t, res.Body, "invalid data")
 }
 
 func TestAddressUpdate(t *testing.T) {
@@ -209,6 +304,11 @@ func TestAddressDeletion(t *testing.T) {
 	assert.Equal(t, 404, res.StatusCode)
 	res = GetAddressHash(addr2.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
+}
+
+func TestOrganisation(t *testing.T) {
+	// Test organisation -> can we add an address
+	// Test organisation -> can we delete an address as organisation owner
 }
 
 func insertAddressRecord(addr pkgAddress.Address, keyPath, routingId, orgToken string, pow *proofofwork.ProofOfWork) *http.Response {

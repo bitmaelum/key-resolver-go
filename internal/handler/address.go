@@ -45,6 +45,7 @@ type addressUploadBody struct {
 
 var (
 	minimumProofBits = 22
+	routeIDRegex = regexp.MustCompile("[a-f0-9]{64}")
 )
 
 type organizationRequestBody struct {
@@ -252,14 +253,8 @@ func validateAddressBody(addrHash hash.Hash, body addressUploadBody) bool {
 	}
 
 	// Check routing
-	re, err := regexp.Compile("^[a-z0-9]{64}$")
-	if err != nil {
-		log.Print("check routing ID failed")
-		return false
-	}
-
 	routing := strings.ToLower(body.RoutingID)
-	return re.Match([]byte(routing))
+	return routeIDRegex.Match([]byte(routing))
 }
 
 // Validate the organisation token
