@@ -25,13 +25,14 @@ import (
 	"time"
 
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 	"github.com/bitmaelum/key-resolver-go/internal/routing"
 	testing2 "github.com/bitmaelum/key-resolver-go/internal/testing"
 	"github.com/stretchr/testify/assert"
 )
 
-type infoType = struct {
+type routingInfoType = struct {
 	Hash         string `json:"hash"`
 	PublicKey    string `json:"public_key"`
 	Routing      string `json:"routing"`
@@ -56,7 +57,7 @@ func TestRouting(t *testing.T) {
 	assert.JSONEq(t, `{ "error": "invalid data" }`, res.Body)
 
 	// Insert new hash
-	res = insertRecord("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", "../../testdata/key-1.json", "127.0.0.1")
+	res = insertRoutingRecord("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", "../../testdata/key-1.json", "127.0.0.1")
 	assert.NotNil(t, res)
 	assert.Equal(t, 201, res.StatusCode)
 	assert.Equal(t, `"created"`, res.Body)
@@ -65,29 +66,29 @@ func TestRouting(t *testing.T) {
 	req = http.NewRequest("GET", "/", "")
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 200, res.StatusCode)
-	info := getRecord(res)
+	info := getRoutingRecord(res)
 	assert.Equal(t, "0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", info.Hash)
 	assert.Equal(t, "rsa MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA04vO0K60ly4iCyfP6PLePK0uF8LYs6GGyH41diteqbPRJqzSb2kCluDF+ZOsgRKHEE5cVquWJWATPFdjQvPluUysxk/jELgDWT4lDbmTP29xIGBQHIlQIrnYaoBHU+b4LegcypMprsdw9EiV9W5R/F/bTMkJyaCD4k9cZzC+T+IEhukhvbEhzYKx62cC41K9MqJ/WBqA6wp2H7xJ/dJKPjCupNbXX9l3Qbj0r20Z43N5ef7imjftEh2kwiQNnveqh6vpnYl1B3AZC+R8ZwLihP/QaBDlh+nYuy/J3SRfM6yFYZn5YQdHKmUj08HWGVxnSuFZFeKTHw2oQ5mL+lyi6QIDAQAB", info.PubKey)
 	assert.Equal(t, "127.0.0.1", info.Routing)
 	assert.Equal(t, uint64(1270643696000000000), info.Serial)
 }
 
-func TestUpdate(t *testing.T) {
+func TestRoutingUpdate(t *testing.T) {
 	sr := routing.NewSqliteResolver(":memory:")
 	routing.SetDefaultRepository(sr)
 	sr.TimeNow = time.Date(2010, 04, 07, 12, 34, 56, 0, time.UTC)
 
 	// Insert some records
-	res := insertRecord("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", "../../testdata/key-1.json", "127.0.0.1")
+	res := insertRoutingRecord("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", "../../testdata/key-1.json", "127.0.0.1")
 	assert.NotNil(t, res)
-	res = insertRecord("c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2", "../../testdata/key-2.json", "9.9.9.9")
+	res = insertRoutingRecord("c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2", "../../testdata/key-2.json", "9.9.9.9")
 	assert.NotNil(t, res)
 
 	// Fetch record
 	req := http.NewRequest("GET", "/", "")
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 200, res.StatusCode)
-	current := getRecord(res)
+	current := getRoutingRecord(res)
 
 	// Update record with incorrect auth
 	pk, _ := bmcrypto.NewPubKey(current.PubKey)
@@ -111,22 +112,22 @@ func TestUpdate(t *testing.T) {
 	req = http.NewRequest("GET", "/", "")
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 200, res.StatusCode)
-	info := getRecord(res)
+	info := getRoutingRecord(res)
 	assert.Equal(t, "0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", info.Hash)
 	assert.Equal(t, "rsa MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA04vO0K60ly4iCyfP6PLePK0uF8LYs6GGyH41diteqbPRJqzSb2kCluDF+ZOsgRKHEE5cVquWJWATPFdjQvPluUysxk/jELgDWT4lDbmTP29xIGBQHIlQIrnYaoBHU+b4LegcypMprsdw9EiV9W5R/F/bTMkJyaCD4k9cZzC+T+IEhukhvbEhzYKx62cC41K9MqJ/WBqA6wp2H7xJ/dJKPjCupNbXX9l3Qbj0r20Z43N5ef7imjftEh2kwiQNnveqh6vpnYl1B3AZC+R8ZwLihP/QaBDlh+nYuy/J3SRfM6yFYZn5YQdHKmUj08HWGVxnSuFZFeKTHw2oQ5mL+lyi6QIDAQAB", info.PubKey)
 	assert.Equal(t, "192.168.1.5", info.Routing)
 	assert.Equal(t, uint64(1292243696001241511), info.Serial)
 }
 
-func TestDeletion(t *testing.T) {
+func TestRoutingDeletion(t *testing.T) {
 	sr := routing.NewSqliteResolver(":memory:")
 	routing.SetDefaultRepository(sr)
 	sr.TimeNow = time.Date(2010, 04, 07, 12, 34, 56, 0, time.UTC)
 
 	// Insert some records
-	res := insertRecord("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", "../../testdata/key-1.json", "127.0.0.1")
+	res := insertRoutingRecord("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", "../../testdata/key-1.json", "127.0.0.1")
 	assert.NotNil(t, res)
-	res = insertRecord("c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2", "../../testdata/key-2.json", "9.9.9.9")
+	res = insertRoutingRecord("c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2", "../../testdata/key-2.json", "9.9.9.9")
 	assert.NotNil(t, res)
 
 	// Delete hash without auth
@@ -164,7 +165,7 @@ func TestDeletion(t *testing.T) {
 	assert.Equal(t, 200, res.StatusCode)
 }
 
-func insertRecord(routingHash string, keyPath string, routing string) *http.Response {
+func insertRoutingRecord(routingHash hash.Hash, keyPath string, routing string) *http.Response {
 	_, pubKey, err := testing2.ReadTestKey(keyPath)
 	if err != nil {
 		return nil
@@ -182,8 +183,8 @@ func insertRecord(routingHash string, keyPath string, routing string) *http.Resp
 	return PostRoutingHash(routingHash, req)
 }
 
-func getRecord(res *http.Response) routing.ResolveInfoType {
-	tmp := &infoType{}
+func getRoutingRecord(res *http.Response) routing.ResolveInfoType {
+	tmp := &routingInfoType{}
 	_ = json.Unmarshal([]byte(res.Body), tmp)
 
 	return routing.ResolveInfoType{

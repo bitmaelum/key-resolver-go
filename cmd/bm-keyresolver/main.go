@@ -22,9 +22,10 @@ package main
 import (
 	"flag"
 	"log"
-	net_http "net/http"
+	nethttp "net/http"
 	"os"
 
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/key-resolver-go/internal"
 	"github.com/bitmaelum/key-resolver-go/internal/handler"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
@@ -34,32 +35,41 @@ import (
 // This is a higher order function that encapsulates a given function (f) and makes sure it can function as a regular
 // mux handler function. Because we use internally our own request and response objects, we need to convert them first.
 // This function makes it a bit easier because we can use in our router simply "requestWrapper(origFunction)"
-func requestWrapper(f func(string, http.Request) *http.Response) func(net_http.ResponseWriter, *net_http.Request) {
-	return func(w net_http.ResponseWriter, req *net_http.Request) {
+func requestWrapper(f func(hash.Hash, http.Request) *http.Response) func(nethttp.ResponseWriter, *nethttp.Request) {
+	return func(w nethttp.ResponseWriter, req *nethttp.Request) {
+		var resp *http.Response
+
+		defer func() {
+			if resp == nil {
+				return
+			}
+
+			// Write response to output
+			w.WriteHeader(resp.StatusCode)
+			for k, v := range resp.Headers.Headers {
+				w.Header().Set(k, v)
+			}
+			_, _ = w.Write([]byte(resp.Body))
+		}()
+
 		// Convert standard net/http request to our internal request structure
 		httpReq := http.NetReqToReq(*req)
 
 		// Fetch hash from mux variables
-		hash := mux.Vars(req)["hash"]
+		h, err := hash.NewFromHash(mux.Vars(req)["hash"])
+		if err != nil {
+			resp = http.CreateError("invalid hash", 400)
+			return
+		}
 
 		// Call our wrapped function
-		var resp = f(hash, httpReq)
-
-		// Write response to output
-		w.WriteHeader(resp.StatusCode)
-		for k, v := range resp.Headers.Headers {
-			w.Header().Set(k, v)
-		}
-		_, _ = w.Write([]byte(resp.Body))
+		resp = f(*h, httpReq)
 	}
 }
 
-func getLogo(_ string, _ http.Request) *http.Response {
-	headers := map[string][]string{}
-	headers["Content-Type"] = []string{"application/json"}
-
+func getLogo(_ hash.Hash, _ http.Request) *http.Response {
 	resp := http.NewResponse(200, internal.Logo)
-	resp.Headers.Set("content-type", "application/json")
+	resp.Headers.Set("content-type", "text/plain")
 
 	return &resp
 }
@@ -68,8 +78,8 @@ func main() {
 	boltDbPath := flag.String("db", "./bolt.db", "Bolt DB path")
 	TcpPort := flag.String("port", "443", "HTTP(s) port to run")
 	ServeHttp := flag.Bool("http", false, "Run in HTTP mode")
-	CertPemFile := flag.String("cert", "./cert.pem", "Cert file in PEM format")
-	KeyPemFile := flag.String("key", "./key.pem", "Key file in PEM format")
+	CertPemFile := flag.String("cert", "./resolver.cert.pem", "Cert file in PEM format")
+	KeyPemFile := flag.String("key", "./resolver.key.pem", "Key file in PEM format")
 	flag.Parse()
 
 	// Make sure we use BOLTDB
@@ -93,10 +103,10 @@ func main() {
 
 	// Serve HTTP if we like
 	if *ServeHttp {
-		err := net_http.ListenAndServe(":"+*TcpPort, router)
+		err := nethttp.ListenAndServe(":"+*TcpPort, router)
 		log.Fatal(err)
 	}
 
-	err := net_http.ListenAndServeTLS(":"+*TcpPort, *CertPemFile, *KeyPemFile, router)
+	err := nethttp.ListenAndServeTLS(":"+*TcpPort, *CertPemFile, *KeyPemFile, router)
 	log.Fatal(err)
 }

@@ -26,6 +26,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/key-resolver-go/internal"
 	"github.com/bitmaelum/key-resolver-go/internal/apigateway"
 	"github.com/bitmaelum/key-resolver-go/internal/handler"
@@ -38,8 +39,8 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 		return getIndex(req), nil
 	}
 
-	hash := strings.ToLower(req.PathParameters["hash"])
-	if len(hash) != 64 {
+	h, err := hash.NewFromHash(req.PathParameters["hash"])
+	if err != nil {
 		resp := http.CreateError("Incorrect hash address", 400)
 		return apigateway.HTTPToResp(resp), nil
 	}
@@ -50,27 +51,27 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	switch req.RouteKey {
 	// Address endpoints
 	case "GET /address/{hash}":
-		httpResp = handler.GetAddressHash(hash, *httpReq)
+		httpResp = handler.GetAddressHash(*h, *httpReq)
 	case "DELETE /address/{hash}":
-		httpResp = handler.DeleteAddressHash(hash, *httpReq)
+		httpResp = handler.DeleteAddressHash(*h, *httpReq)
 	case "POST /address/{hash}":
-		httpResp = handler.PostAddressHash(hash, *httpReq)
+		httpResp = handler.PostAddressHash(*h, *httpReq)
 
 	// Routing endpoints
 	case "GET /routing/{hash}":
-		httpResp = handler.GetRoutingHash(hash, *httpReq)
+		httpResp = handler.GetRoutingHash(*h, *httpReq)
 	case "DELETE /routing/{hash}":
-		httpResp = handler.DeleteRoutingHash(hash, *httpReq)
+		httpResp = handler.DeleteRoutingHash(*h, *httpReq)
 	case "POST /routing/{hash}":
-		httpResp = handler.PostRoutingHash(hash, *httpReq)
+		httpResp = handler.PostRoutingHash(*h, *httpReq)
 
 	// Organisation endpoints
 	case "GET /organisation/{hash}":
-		httpResp = handler.GetOrganisationHash(hash, *httpReq)
+		httpResp = handler.GetOrganisationHash(*h, *httpReq)
 	case "DELETE /organisation/{hash}":
-		httpResp = handler.DeleteOrganisationHash(hash, *httpReq)
+		httpResp = handler.DeleteOrganisationHash(*h, *httpReq)
 	case "POST /organisation/{hash}":
-		httpResp = handler.PostOrganisationHash(hash, *httpReq)
+		httpResp = handler.PostOrganisationHash(*h, *httpReq)
 	}
 
 	if httpResp == nil {

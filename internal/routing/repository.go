@@ -51,7 +51,8 @@ func GetResolveRepository() Repository {
 	}
 
 	if os.Getenv("USE_BOLT") == "1" {
-		return NewBoltResolver(os.Getenv("BOLT_DB_FILE"))
+		resolver = NewBoltResolver()
+		return resolver
 	}
 
 	sess := session.Must(session.NewSessionWithOptions(session.Options{

@@ -21,9 +21,9 @@ package address
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
+	"github.com/bitmaelum/key-resolver-go/internal"
 	"github.com/boltdb/bolt"
 )
 
@@ -33,14 +33,10 @@ type boltResolver struct {
 }
 
 // NewBoltResolver returns a new resolver based on BoltDB
-func NewBoltResolver(p string) Repository {
-	db, err := bolt.Open(p, 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+func NewBoltResolver() Repository {
 
 	return &boltResolver{
-		client:     db,
+		client:     internal.GetBoltDb(),
 		bucketName: "address",
 	}
 }

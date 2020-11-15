@@ -1,4 +1,4 @@
-name: Key Resolver
+name: BitMaelum Key Resolver
 on: [ push, pull_request ]
 jobs:
   test:

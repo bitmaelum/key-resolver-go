@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 	"github.com/bitmaelum/key-resolver-go/internal/organisation"
@@ -36,9 +37,9 @@ type organisationUploadBody struct {
 	Validations []string                `json:"validations"`
 }
 
-func GetOrganisationHash(hash string, _ http.Request) *http.Response {
+func GetOrganisationHash(orgHash hash.Hash, _ http.Request) *http.Response {
 	repo := organisation.GetResolveRepository()
-	info, err := repo.Get(hash)
+	info, err := repo.Get(orgHash.String())
 	if err != nil && err != organisation.ErrNotFound {
 		log.Print(err)
 		return http.CreateError("hash not found", 404)
@@ -59,9 +60,9 @@ func GetOrganisationHash(hash string, _ http.Request) *http.Response {
 	return http.CreateOutput(data, 200)
 }
 
-func PostOrganisationHash(hash string, req http.Request) *http.Response {
+func PostOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response {
 	repo := organisation.GetResolveRepository()
-	current, err := repo.Get(hash)
+	current, err := repo.Get(orgHash.String())
 	if err != nil && err != organisation.ErrNotFound {
 		log.Print(err)
 		return http.CreateError("error while posting record", 500)
@@ -80,16 +81,16 @@ func PostOrganisationHash(hash string, req http.Request) *http.Response {
 
 	if current == nil {
 		// Does not exist yet
-		return createOrganisation(hash, *uploadBody)
+		return createOrganisation(orgHash, *uploadBody)
 	}
 
 	// Try update
 	return updateOrganisation(*uploadBody, req, current)
 }
 
-func DeleteOrganisationHash(hash string, req http.Request) *http.Response {
+func DeleteOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response {
 	repo := organisation.GetResolveRepository()
-	current, err := repo.Get(hash)
+	current, err := repo.Get(orgHash.String())
 	if err != nil {
 		log.Print(err)
 		return http.CreateError("error while fetching record", 500)
@@ -128,13 +129,13 @@ func updateOrganisation(uploadBody organisationUploadBody, req http.Request, cur
 	return http.CreateOutput("updated", 200)
 }
 
-func createOrganisation(hash string, uploadBody organisationUploadBody) *http.Response {
+func createOrganisation(orgHash hash.Hash, uploadBody organisationUploadBody) *http.Response {
 	if !uploadBody.Proof.IsValid() {
 		return http.CreateError("incorrect proof-of-work", 401)
 	}
 
 	repo := organisation.GetResolveRepository()
-	res, err := repo.Create(hash, uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
+	res, err := repo.Create(orgHash.String(), uploadBody.PublicKey.String(), uploadBody.Proof.String(), uploadBody.Validations)
 
 	if err != nil || !res {
 		log.Print(err)

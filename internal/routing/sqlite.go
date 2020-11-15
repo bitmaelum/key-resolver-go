@@ -62,26 +62,26 @@ func NewSqliteResolver(dsn string) *SqliteDbResolver {
 }
 
 func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
-	serial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
+	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
 	st, err := r.conn.Prepare("UPDATE mock_routing SET pubkey=?, routing=?, serial=? WHERE routing_id=? AND serial=?")
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(publicKey, routing, serial, info.Hash, info.Serial)
+	res, err := st.Exec(publicKey, routing, newSerial, info.Hash, info.Serial)
 	if err != nil {
 		return false, err
 	}
 
-	numDeleted, err := res.RowsAffected()
-	return numDeleted != 0, err
+	count, err := res.RowsAffected()
+	return count != 0, err
 }
 
 func (r *SqliteDbResolver) Create(hash, routing, publicKey string) (bool, error) {
-	serial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
+	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	res, err := r.conn.Exec("INSERT INTO mock_routing VALUES (?, ?, ?, ?)", hash, publicKey, routing, serial)
+	res, err := r.conn.Exec("INSERT INTO mock_routing VALUES (?, ?, ?, ?)", hash, publicKey, routing, newSerial)
 	if err != nil {
 		return false, err
 	}

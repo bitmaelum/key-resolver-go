@@ -26,8 +26,8 @@ import (
 	"strconv"
 	"strings"
 
-	pkgAddress "github.com/bitmaelum/bitmaelum-suite/pkg/address"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
 	"github.com/bitmaelum/key-resolver-go/internal/address"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
@@ -35,22 +35,26 @@ import (
 )
 
 type addressUploadBody struct {
-	UserHash  string                  `json:"user_hash"`
-	OrgHash   string                  `json:"org_hash"`
-	OrgToken  string                  `json:"org_token,omitempty"`
-	PublicKey bmcrypto.PubKey         `json:"public_key"`
-	RoutingID string                  `json:"routing_id"`
-	Proof     proofofwork.ProofOfWork `json:"proof"`
+	UserHash  hash.Hash                `json:"user_hash"`
+	OrgHash   hash.Hash                `json:"org_hash"`
+	OrgToken  string                   `json:"org_token,omitempty"`
+	PublicKey *bmcrypto.PubKey         `json:"public_key"`
+	RoutingID string                   `json:"routing_id"`
+	Proof     *proofofwork.ProofOfWork `json:"proof"`
 }
+
+var (
+	minimumProofBits = 22
+)
 
 type organizationRequestBody struct {
-	UserHash         string `json:"user_hash"`
-	OrganizationHash string `json:"org_hash"`
+	UserHash         hash.Hash `json:"user_hash,omitempty"`
+	OrganizationHash hash.Hash `json:"org_hash,omitempty"`
 }
 
-func GetAddressHash(hash string, _ http.Request) *http.Response {
+func GetAddressHash(hash hash.Hash, _ http.Request) *http.Response {
 	repo := address.GetResolveRepository()
-	info, err := repo.Get(hash)
+	info, err := repo.Get(hash.String())
 	if err != nil && err != address.ErrNotFound {
 		log.Print(err)
 		return http.CreateError("hash not found", 404)
@@ -66,14 +70,15 @@ func GetAddressHash(hash string, _ http.Request) *http.Response {
 		"routing_id":    info.RoutingID,
 		"public_key":    info.PubKey,
 		"serial_number": info.Serial,
+		"proof":         info.Proof,
 	}
 
 	return http.CreateOutput(data, 200)
 }
 
-func PostAddressHash(addrHash string, req http.Request) *http.Response {
+func PostAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 	repo := address.GetResolveRepository()
-	current, err := repo.Get(addrHash)
+	current, err := repo.Get(addrHash.String())
 	if err != nil && err != address.ErrNotFound {
 		log.Print(err)
 		return http.CreateError("error while posting record", 500)
@@ -104,13 +109,15 @@ func PostAddressHash(addrHash string, req http.Request) *http.Response {
 	return updateAddress(*uploadBody, req, current)
 }
 
-func DeleteAddressHash(addrHash string, req http.Request) *http.Response {
+func DeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 	requestBody := &organizationRequestBody{}
 
-	err := json.Unmarshal([]byte(req.Body), requestBody)
-	if err != nil {
-		log.Print(err)
-		return http.CreateError("invalid body data", 400)
+	if req.Body != "" {
+		err := json.Unmarshal([]byte(req.Body), requestBody)
+		if err != nil {
+			log.Print(err)
+			return http.CreateError("invalid body data", 400)
+		}
 	}
 
 	if requestBody.OrganizationHash != "" {
@@ -120,9 +127,9 @@ func DeleteAddressHash(addrHash string, req http.Request) *http.Response {
 	return deleteAddressHashByOwner(addrHash, req)
 }
 
-func deleteAddressHashByOwner(addrHash string, req http.Request) *http.Response {
+func deleteAddressHashByOwner(addrHash hash.Hash, req http.Request) *http.Response {
 	repo := address.GetResolveRepository()
-	current, err := repo.Get(addrHash)
+	current, err := repo.Get(addrHash.String())
 	if err != nil {
 		log.Print(err)
 		return http.CreateError("error while fetching record", 500)
@@ -145,16 +152,16 @@ func deleteAddressHashByOwner(addrHash string, req http.Request) *http.Response 
 	return http.CreateOutput("ok", 200)
 }
 
-func deleteAddressHashByOrganization(addrHash string, organizationInfo *organizationRequestBody, req http.Request) *http.Response {
+func deleteAddressHashByOrganization(addrHash hash.Hash, organizationInfo *organizationRequestBody, req http.Request) *http.Response {
 	addressRepo := address.GetResolveRepository()
-	currentAddress, err := addressRepo.Get(addrHash)
+	currentAddress, err := addressRepo.Get(addrHash.String())
 	if err != nil {
 		log.Print(err)
 		return http.CreateError("error while fetching address record", 500)
 	}
 
 	orgRepo := organisation.GetResolveRepository()
-	currentOrg, err := orgRepo.Get(organizationInfo.OrganizationHash)
+	currentOrg, err := orgRepo.Get(organizationInfo.OrganizationHash.String())
 	if err != nil {
 		log.Print(err)
 		return http.CreateError("error while fetching organization record", 500)
@@ -169,7 +176,7 @@ func deleteAddressHashByOrganization(addrHash string, organizationInfo *organiza
 	}
 
 	// Checks if the user hash + org hash matches the hash to be deleted
-	if !pkgAddress.VerifyHash(addrHash, organizationInfo.UserHash, organizationInfo.OrganizationHash) {
+	if !addrHash.Verify(organizationInfo.UserHash, organizationInfo.OrganizationHash) {
 		return http.CreateError("error validating address", 401)
 	}
 
@@ -202,13 +209,18 @@ func updateAddress(uploadBody addressUploadBody, req http.Request, current *addr
 	return http.CreateOutput("updated", 200)
 }
 
-func createAddress(addrHash string, uploadBody addressUploadBody) *http.Response {
+func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Response {
 	if !uploadBody.Proof.IsValid() {
 		return http.CreateError("incorrect proof-of-work", 401)
 	}
 
+	// Sanity check to see if the proof given actually matches our wanted data and minimum bits
+	if uploadBody.Proof.Data != addrHash.String() || uploadBody.Proof.Bits < minimumProofBits {
+		return http.CreateError("incorrect proof-of-work", 401)
+	}
+
 	repo := address.GetResolveRepository()
-	res, err := repo.Create(addrHash, uploadBody.RoutingID, uploadBody.PublicKey.String(), uploadBody.Proof.String())
+	res, err := repo.Create(addrHash.String(), uploadBody.RoutingID, uploadBody.PublicKey.String(), uploadBody.Proof.String())
 	if err != nil || !res {
 		log.Print(err)
 		return http.CreateError("error while creating: ", 500)
@@ -218,45 +230,43 @@ func createAddress(addrHash string, uploadBody addressUploadBody) *http.Response
 }
 
 // Validate the incoming body
-func validateAddressBody(addrHash string, body addressUploadBody) bool {
+func validateAddressBody(addrHash hash.Hash, body addressUploadBody) bool {
 	// PubKey and Pow are already validated through the JSON marshalling
 
 	// Check if the user + org hash matches the address hash
-	if !pkgAddress.VerifyHash(addrHash, body.UserHash, body.OrgHash) {
+	if !addrHash.Verify(body.UserHash, body.OrgHash) {
+		log.Print("verify hash failed")
 		return false
 	}
 
 	// When specifying an organisation, we need an organisation token
-	if body.OrgHash != "" && body.OrgToken == "" {
+	if !body.OrgHash.IsEmpty() && body.OrgToken == "" {
+		log.Print("need token for org")
 		return false
 	}
 
 	// Can't specify token when no org is needed
-	if body.OrgHash == "" && body.OrgToken != "" {
+	if body.OrgHash.IsEmpty() && body.OrgToken != "" {
+		log.Print("don't need token for non-org")
 		return false
 	}
 
 	// Check routing
-	routing := strings.ToLower(body.RoutingID)
-
 	re, err := regexp.Compile("^[a-z0-9]{64}$")
 	if err != nil {
+		log.Print("check routing ID failed")
 		return false
 	}
 
+	routing := strings.ToLower(body.RoutingID)
 	return re.Match([]byte(routing))
 }
 
 // Validate the organisation token
-func validateOrgToken(token, addr string, orgHash string, routingID string) bool {
-	addrHash, err := pkgAddress.NewHashFromHash(addr)
-	if err != nil {
-		return false
-	}
-
+func validateOrgToken(token string, addr hash.Hash, orgHash hash.Hash, routingID string) bool {
 	// Load org Info
 	repo := organisation.GetResolveRepository()
-	oi, err := repo.Get(orgHash)
+	oi, err := repo.Get(orgHash.String())
 	if err != nil {
 		return false
 	}
@@ -265,5 +275,5 @@ func validateOrgToken(token, addr string, orgHash string, routingID string) bool
 		return false
 	}
 
-	return address.VerifyInviteToken(token, addrHash, routingID, *pubKey)
+	return address.VerifyInviteToken(token, addr, routingID, *pubKey)
 }

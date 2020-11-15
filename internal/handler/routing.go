@@ -26,6 +26,7 @@ import (
 	"strconv"
 
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 	"github.com/bitmaelum/key-resolver-go/internal/routing"
 )
@@ -35,9 +36,9 @@ type routingUploadBody struct {
 	Routing   string           `json:"routing"`
 }
 
-func GetRoutingHash(hash string, _ http.Request) *http.Response {
+func GetRoutingHash(routingHash hash.Hash, _ http.Request) *http.Response {
 	repo := routing.GetResolveRepository()
-	info, err := repo.Get(hash)
+	info, err := repo.Get(routingHash.String())
 	if err != nil && err != routing.ErrNotFound {
 		log.Print(err)
 		return http.CreateError("hash not found", 404)
@@ -58,9 +59,9 @@ func GetRoutingHash(hash string, _ http.Request) *http.Response {
 	return http.CreateOutput(data, 200)
 }
 
-func PostRoutingHash(hash string, req http.Request) *http.Response {
+func PostRoutingHash(routingHash hash.Hash, req http.Request) *http.Response {
 	repo := routing.GetResolveRepository()
-	current, err := repo.Get(hash)
+	current, err := repo.Get(routingHash.String())
 	if err != nil && err != routing.ErrNotFound {
 		log.Print(err)
 		return http.CreateError("error while posting record", 500)
@@ -79,7 +80,7 @@ func PostRoutingHash(hash string, req http.Request) *http.Response {
 
 	if current == nil {
 		// Does not exist yet
-		return createRouting(hash, *uploadBody)
+		return createRouting(routingHash, *uploadBody)
 	}
 
 	// Try update
@@ -102,9 +103,9 @@ func updateRouting(uploadBody routingUploadBody, req http.Request, current *rout
 	return http.CreateOutput("updated", 200)
 }
 
-func createRouting(hash string, uploadBody routingUploadBody) *http.Response {
+func createRouting(routingHash hash.Hash, uploadBody routingUploadBody) *http.Response {
 	repo := routing.GetResolveRepository()
-	res, err := repo.Create(hash, uploadBody.Routing, uploadBody.PublicKey.String())
+	res, err := repo.Create(routingHash.String(), uploadBody.Routing, uploadBody.PublicKey.String())
 
 	if err != nil || !res {
 		log.Print(err)
@@ -114,9 +115,9 @@ func createRouting(hash string, uploadBody routingUploadBody) *http.Response {
 	return http.CreateOutput("created", 201)
 }
 
-func DeleteRoutingHash(hash string, req http.Request) *http.Response {
+func DeleteRoutingHash(routingHash hash.Hash, req http.Request) *http.Response {
 	repo := routing.GetResolveRepository()
-	current, err := repo.Get(hash)
+	current, err := repo.Get(routingHash.String())
 	if err != nil {
 		log.Print(err)
 		return http.CreateError("error while fetching record", 500)
