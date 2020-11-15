@@ -52,7 +52,8 @@ func GetResolveRepository() Repository {
 	}
 
 	if os.Getenv("USE_BOLT") == "1" {
-		return NewBoltResolver(os.Getenv("BOLT_DB_FILE"))
+		resolver = NewBoltResolver()
+		return resolver
 	}
 
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
@@ -61,4 +62,9 @@ func GetResolveRepository() Repository {
 
 	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ADDRESS_TABLE_NAME"))
 	return resolver
+}
+
+// Sets the default repository for resolving. Can be used to override for mocking/testing purposes
+func SetDefaultRepository(r Repository) {
+	resolver = r
 }

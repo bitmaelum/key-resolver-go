@@ -26,13 +26,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitmaelum/bitmaelum-suite/pkg/address"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 )
 
 var timeNow = time.Now
 
-func VerifyInviteToken(token string, addrHash *address.HashAddress, routingID string, key bmcrypto.PubKey) bool {
+func GenerateToken(addrHash hash.Hash, routingID string, validUntil time.Time, pk bmcrypto.PrivKey) string {
+	h := sha256.Sum256([]byte(addrHash.String() + routingID + strconv.FormatInt(validUntil.Unix(), 10)))
+	sig, _ := bmcrypto.Sign(pk, h[:])
+
+	s := addrHash.String() + ":" + routingID + ":" + strconv.FormatInt(validUntil.Unix(), 10) + ":" + string(sig)
+	return base64.StdEncoding.EncodeToString([]byte(s))
+}
+
+func VerifyInviteToken(token string, addrHash hash.Hash, routingID string, key bmcrypto.PubKey) bool {
 	tokenData, err := base64.StdEncoding.DecodeString(token)
 	if err != nil {
 		return false

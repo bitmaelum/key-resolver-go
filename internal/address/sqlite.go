@@ -30,17 +30,18 @@ import (
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
-type sqliteDbResolver struct {
+type SqliteDbResolver struct {
 	conn      *sql.DB
 	dsn       string
 	TableName string
+	TimeNow   time.Time
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
-func NewSqliteResolver(dsn, tableName string) Repository {
+func NewSqliteResolver(dsn string) *SqliteDbResolver {
 	if !strings.HasPrefix(dsn, "file:") {
 		if dsn == ":memory:" {
-			dsn = "file::memory:?mode=memory&cache=shared"
+			dsn = "file::memory:?mode=memory"
 		} else {
 			dsn = fmt.Sprintf("file:%s?cache=shared&mode=rwc", dsn)
 		}
@@ -51,81 +52,78 @@ func NewSqliteResolver(dsn, tableName string) Repository {
 		return nil
 	}
 
-	db := &sqliteDbResolver{
+	db := &SqliteDbResolver{
 		conn:      conn,
 		dsn:       dsn,
-		TableName: tableName,
+		TimeNow:   time.Now(),
 	}
 
-	_, _ = db.conn.Query(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (hash VARCHAR(64) PRIMARY KEY, pubkey TEXT, routing_id VARCHAR(64), serial INT)", db.TableName))
+	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_address (hash VARCHAR(64) PRIMARY KEY, pubkey TEXT, routing_id VARCHAR(64), proof TEXT, serial INT)")
+	if err != nil {
+		return nil
+	}
+
 	return db
 }
 
-func (r *sqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
-	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
+func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
+	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	query := fmt.Sprintf("UPDATE %s SET pubkey=?, proof=?, serial=? WHERE hash=? AND serial=?", r.TableName)
-	st, err := r.conn.Prepare(query)
+	st, err := r.conn.Prepare("UPDATE mock_address SET routing_id=?, pubkey=?, serial=? WHERE hash=? AND serial=?")
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(info.PubKey, info.Proof, serial, info.Hash, info.Serial)
+	res, err := st.Exec(routing, publicKey, newSerial, info.Hash, info.Serial)
 	if err != nil {
 		return false, err
 	}
 
-	numDeleted, err := res.RowsAffected()
-	return numDeleted != 0, err
+	count, err := res.RowsAffected()
+	return count != 0, err
 }
 
-func (r *sqliteDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
-	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
+func (r *SqliteDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
+	serial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	query := fmt.Sprintf("INSERTO INTO %s VALUES (hash, pubkey, proof, serial)", r.TableName)
-	st, err := r.conn.Prepare(query)
+	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?)", hash, publicKey, routing, proof, serial)
 	if err != nil {
 		return false, err
 	}
 
-	_, err = st.Exec(hash, publicKey, proof, serial)
-	return err != nil, err
+	count, err := res.RowsAffected()
+	return count != 0, err
 }
 
-func (r *sqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
+func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	var (
 		h   string
 		pk  string
+		rt  string
 		pow string
 		sn  uint64
 	)
 
-	query := fmt.Sprintf("SELECT hash, pubkey, proof, serial FROM %s WHERE hash LIKE ?", r.TableName)
-	err := r.conn.QueryRow(query, hash).Scan(&h, &pk, &pow, &sn)
+	err := r.conn.QueryRow("SELECT hash, pubkey, routing_id, proof, serial FROM mock_address WHERE hash LIKE ?", hash).Scan(&h, &pk, &rt, &pow, &sn)
 	if err != nil {
 		return nil, ErrNotFound
 	}
-
+	
 	return &ResolveInfoType{
-		Hash:   h,
-		PubKey: pk,
-		Proof:  pow,
-		Serial: sn,
+		Hash:      h,
+		RoutingID: rt,
+		PubKey:    pk,
+		Proof:     pow,
+		Serial:    sn,
 	}, nil
 }
 
-func (r *sqliteDbResolver) Delete(hash string) (bool, error) {
-	query := fmt.Sprintf("DELETE FROM %s WHERE hash LIKE ?", r.TableName)
-	st, err := r.conn.Prepare(query)
+func (r *SqliteDbResolver) Delete(hash string) (bool, error) {
+	res, err := r.conn.Exec("DELETE FROM mock_address WHERE hash LIKE ?", hash)
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(hash)
-	if err != nil {
-		return false, err
-	}
-
-	numDeleted, err := res.RowsAffected()
-	return numDeleted != 0, err
+	count, err := res.RowsAffected()
+	return count != 0, err
 }
