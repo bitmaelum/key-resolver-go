@@ -63,3 +63,8 @@ func GetResolveRepository() Repository {
 	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ORGANISATION_TABLE_NAME"))
 	return resolver
 }
+
+// Sets the default repository for resolving. Can be used to override for mocking/testing purposes
+func SetDefaultRepository(r Repository) {
+	resolver = r
+}

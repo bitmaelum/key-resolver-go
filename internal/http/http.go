@@ -107,6 +107,12 @@ func CreateOutput(data interface{}, statusCode int) *Response {
 	return &resp
 }
 
+func GenerateSignature(b []byte, pk bmcrypto.PrivKey) string {
+	h := sha256.Sum256(b)
+	sig, _ := bmcrypto.Sign(pk, h[:])
+	return base64.StdEncoding.EncodeToString(sig)
+}
+
 // validateSignature validates a signature based on the authorization header
 func (r Request) ValidateSignature(pubKey, hashData string) bool {
 	if !r.Headers.Has("authorization") {

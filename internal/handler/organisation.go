@@ -32,9 +32,9 @@ import (
 )
 
 type organisationUploadBody struct {
-	PublicKey   bmcrypto.PubKey         `json:"public_key"`
-	Proof       proofofwork.ProofOfWork `json:"proof"`
-	Validations []string                `json:"validations"`
+	PublicKey   *bmcrypto.PubKey         `json:"public_key"`
+	Proof       *proofofwork.ProofOfWork `json:"proof"`
+	Validations []string                 `json:"validations"`
 }
 
 func GetOrganisationHash(orgHash hash.Hash, _ http.Request) *http.Response {
@@ -53,6 +53,7 @@ func GetOrganisationHash(orgHash hash.Hash, _ http.Request) *http.Response {
 	data := http.RawJSONOut{
 		"hash":          info.Hash,
 		"public_key":    info.PubKey,
+		"proof":         info.Proof,
 		"validations":   info.Validations,
 		"serial_number": info.Serial,
 	}
@@ -131,6 +132,11 @@ func updateOrganisation(uploadBody organisationUploadBody, req http.Request, cur
 
 func createOrganisation(orgHash hash.Hash, uploadBody organisationUploadBody) *http.Response {
 	if !uploadBody.Proof.IsValid() {
+		return http.CreateError("incorrect proof-of-work", 401)
+	}
+
+	// Sanity check to see if the proof given actually matches our wanted data and minimum bits
+	if uploadBody.Proof.Data != orgHash.String() || uploadBody.Proof.Bits < minimumProofBits {
 		return http.CreateError("incorrect proof-of-work", 401)
 	}
 

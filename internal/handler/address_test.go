@@ -306,7 +306,7 @@ func TestAddressDeletion(t *testing.T) {
 	assert.Equal(t, 200, res.StatusCode)
 }
 
-func TestOrganisation(t *testing.T) {
+func TestOrganisationalAddresses(t *testing.T) {
 	// Test organisation -> can we add an address
 	// Test organisation -> can we delete an address as organisation owner
 }

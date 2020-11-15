@@ -20,6 +20,7 @@
 package organisation
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -31,16 +32,16 @@ import (
 )
 
 type sqliteDbResolver struct {
-	conn      *sql.DB
-	dsn       string
-	TableName string
+	conn    *sql.DB
+	dsn     string
+	TimeNow time.Time
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
-func NewSqliteResolver(dsn, tableName string) Repository {
+func NewSqliteResolver(dsn string) *sqliteDbResolver {
 	if !strings.HasPrefix(dsn, "file:") {
 		if dsn == ":memory:" {
-			dsn = "file::memory:?mode=memory&cache=shared"
+			dsn = "file::memory:?mode=memory"
 		} else {
 			dsn = fmt.Sprintf("file:%s?cache=shared&mode=rwc", dsn)
 		}
@@ -52,44 +53,53 @@ func NewSqliteResolver(dsn, tableName string) Repository {
 	}
 
 	db := &sqliteDbResolver{
-		conn:      conn,
-		dsn:       dsn,
-		TableName: tableName,
+		conn:    conn,
+		dsn:     dsn,
+		TimeNow: time.Now(),
 	}
 
-	_, _ = db.conn.Query(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (hash VARCHAR(64) PRIMARY KEY, pubkey TEXT, serial INT)", db.TableName))
+	_, _ = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_organisation (hash VARCHAR(64) PRIMARY KEY, proof TEXT, validations TEXT, pubkey TEXT, serial INTEGER)")
 	return db
 }
 
 func (r *sqliteDbResolver) Update(info *ResolveInfoType, publicKey, proof string, validations []string) (bool, error) {
-	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
+	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	query := fmt.Sprintf("UPDATE %s SET pubkey=?, validations=?, proof=?, serial=? WHERE hash=? AND serial=?", r.TableName)
-	st, err := r.conn.Prepare(query)
+
+	st, err := r.conn.Prepare("UPDATE mock_organisation SET pubkey=?, validations=?, proof=?, serial=? WHERE hash=? AND serial=?")
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(info.PubKey, info.Validations, info.Proof, serial, info.Hash, info.Serial)
+	b, err := json.Marshal(validations)
 	if err != nil {
 		return false, err
 	}
 
-	numDeleted, err := res.RowsAffected()
-	return numDeleted != 0, err
+	res, err := st.Exec(publicKey, string(b), proof, newSerial, info.Hash, info.Serial)
+	if err != nil {
+		return false, err
+	}
+
+	count, err := res.RowsAffected()
+	return count != 0, err
 }
 
 func (r *sqliteDbResolver) Create(hash, publicKey, proof string, validations []string) (bool, error) {
-	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
+	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	query := fmt.Sprintf("INSERTO INTO %s VALUES (hash, pubkey, validations, proof, serial)", r.TableName)
-	st, err := r.conn.Prepare(query)
+	b, err := json.Marshal(validations)
 	if err != nil {
 		return false, err
 	}
 
-	_, err = st.Exec(hash, publicKey, validations, proof, serial)
-	return err != nil, err
+	res, err := r.conn.Exec("INSERT INTO mock_organisation VALUES (?, ?, ?, ?, ?)", hash, proof, string(b), publicKey, newSerial)
+	if err != nil {
+		return false, err
+	}
+
+	count, err := res.RowsAffected()
+	return count != 0, err
 }
 
 func (r *sqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
@@ -98,36 +108,36 @@ func (r *sqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		pk  string
 		pow string
 		sn  uint64
-		v   []string
+		v   []byte
 	)
 
-	query := fmt.Sprintf("SELECT hash, pubkey, proof, serial, validations FROM %s WHERE hash LIKE ?", r.TableName)
-	err := r.conn.QueryRow(query, hash).Scan(&h, &pk, &pow, &sn, &v)
+	query := fmt.Sprintf("SELECT hash, pubkey, proof, validations, serial FROM mock_organisation WHERE hash LIKE ?")
+	err := r.conn.QueryRow(query, hash).Scan(&h, &pk, &pow, &v, &sn)
 	if err != nil {
 		return nil, ErrNotFound
+	}
+
+	var val []string
+	err = json.Unmarshal(v, &val)
+	if err != nil {
+		return nil, err
 	}
 
 	return &ResolveInfoType{
 		Hash:        h,
 		PubKey:      pk,
 		Proof:       pow,
-		Validations: nil,
+		Validations: val,
 		Serial:      sn,
 	}, nil
 }
 
 func (r *sqliteDbResolver) Delete(hash string) (bool, error) {
-	query := fmt.Sprintf("DELETE FROM %s WHERE hash LIKE ?", r.TableName)
-	st, err := r.conn.Prepare(query)
+	res, err := r.conn.Exec("DELETE FROM mock_organisation WHERE hash LIKE ?", hash)
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(hash)
-	if err != nil {
-		return false, err
-	}
-
-	numDeleted, err := res.RowsAffected()
-	return numDeleted != 0, err
+	count, err := res.RowsAffected()
+	return count != 0, err
 }
