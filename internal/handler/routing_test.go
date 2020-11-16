@@ -105,16 +105,15 @@ func TestRoutingUpdate(t *testing.T) {
 	assert.Equal(t, 401, res.StatusCode)
 	assert.JSONEq(t, `{ "error": "unauthenticated" }`, res.Body)
 
-
 	// Create authentication token
 	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-1.json")
-	sig := current.Hash+strconv.FormatUint(current.Serial, 10)
+	sig := current.Hash + strconv.FormatUint(current.Serial, 10)
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Update record with correct auth
 	req = http.NewRequest("GET", "/", "")
 	// req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++wes1RLx7Q1O26cmcvpsAV/7I0e+ISDSzHHW82zuvLw0IaqZ7xngrkz4QdG00VGi3mS6bNSjQqU4Yxrqoiwk/o/jVD0/MHLxYbJHn+taL2sEeSMBvfkc5zHoqsNAgZQ7anvAsYASF30NR3pGvp/66P801sYxJYrIv4b48U2Z3pQZHozDY2e4YUA+14ZWZIYqQ+K8yCa78KTSTy5mDznP2Hpvnsy6sT8R93u2aLk++vLCmRby3REGfYRaWDxSGxgXjCgVqiLdFRLhg==")
-	req.Headers.Set("authorization", "BEARER " + authToken)
+	req.Headers.Set("authorization", "BEARER "+authToken)
 	sr.TimeNow = time.Date(2010, 12, 13, 12, 34, 56, 1241511, time.UTC)
 	res = updateRouting(*body, req, &current)
 	assert.Equal(t, 200, res.StatusCode)

@@ -81,7 +81,6 @@ func TestToken(t *testing.T) {
 	assert.False(t, ok)
 }
 
-
 func TestMain(m *testing.M) {
 	log.SetOutput(ioutil.Discard)
 	os.Exit(m.Run())

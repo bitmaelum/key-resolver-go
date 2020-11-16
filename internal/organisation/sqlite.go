@@ -65,7 +65,6 @@ func NewSqliteResolver(dsn string) *SqliteDbResolver {
 func (r *SqliteDbResolver) Update(info *ResolveInfoType, publicKey, proof string, validations []string) (bool, error) {
 	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-
 	st, err := r.conn.Prepare("UPDATE mock_organisation SET pubkey=?, validations=?, proof=?, serial=? WHERE hash=? AND serial=?")
 	if err != nil {
 		return false, err
@@ -111,7 +110,7 @@ func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		v   []byte
 	)
 
-	query := fmt.Sprintf("SELECT hash, pubkey, proof, validations, serial FROM mock_organisation WHERE hash LIKE ?")
+	query := "SELECT hash, pubkey, proof, validations, serial FROM mock_organisation WHERE hash LIKE ?"
 	err := r.conn.QueryRow(query, hash).Scan(&h, &pk, &pow, &v, &sn)
 	if err != nil {
 		return nil, ErrNotFound

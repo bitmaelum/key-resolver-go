@@ -210,7 +210,6 @@ func TestAddressUpdate(t *testing.T) {
 	addr2, _ := pkgAddress.NewAddress("bar!")
 	pow2 := proofofwork.New(22, addr2.Hash().String(), 1019732)
 
-
 	// Insert some records
 	res := insertAddressRecord(*addr1, "../../testdata/key-3.json", fakeRoutingId.String(), "", pow1)
 	assert.NotNil(t, res)
@@ -240,15 +239,14 @@ func TestAddressUpdate(t *testing.T) {
 	assert.Equal(t, 401, res.StatusCode)
 	assert.JSONEq(t, `{ "error": "unauthenticated" }`, res.Body)
 
-
 	// Create authentication token
 	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-3.json")
-	sig := current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)
+	sig := current.Hash + current.RoutingID + strconv.FormatUint(current.Serial, 10)
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Update record with correct auth
 	req = http.NewRequest("GET", "/", "")
-	req.Headers.Set("authorization", "BEARER " + authToken)
+	req.Headers.Set("authorization", "BEARER "+authToken)
 	// req.Headers.Set("authorization", "BEARER 2UxSWVAUJ/iIr59x76B9bF/CeQXDi4dTY4D73P8iJwE/CRaIpRyg1RHMbfLVM6fz3sfOammn8wzhooxfv6BVAg==")
 
 	setRepoTime(time.Date(2010, 12, 13, 12, 34, 56, 1241511, time.UTC))
@@ -274,7 +272,6 @@ func TestAddressDeletion(t *testing.T) {
 
 	addr2, _ := pkgAddress.NewAddress("bar!")
 	pow2 := proofofwork.New(22, addr2.Hash().String(), 1019732)
-
 
 	// Insert some records
 	res := insertAddressRecord(*addr1, "../../testdata/key-3.json", fakeRoutingId.String(), "", pow1)
@@ -304,7 +301,6 @@ func TestAddressDeletion(t *testing.T) {
 	res = DeleteAddressHash("00000000000000000000000000000317ae30d319295b491e86e9a5ffdab8fd7e", req)
 	assert.Equal(t, 500, res.StatusCode)
 
-
 	// Fetch addr1 record
 	req = http.NewRequest("GET", "/", "")
 	res = GetAddressHash(addr1.Hash(), req)
@@ -313,12 +309,12 @@ func TestAddressDeletion(t *testing.T) {
 
 	// Create authentication token
 	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-3.json")
-	sig := current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)
+	sig := current.Hash + current.RoutingID + strconv.FormatUint(current.Serial, 10)
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Delete hash with auth
 	req = http.NewRequest("GET", "/", "")
-	req.Headers.Set("authorization", "BEARER " + authToken)
+	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash("efd5631354d823cd64aa8df8149cc317ae30d319295b491e86e9a5ffdab8fd7e", req)
 	assert.Equal(t, 200, res.StatusCode)
 
@@ -335,13 +331,13 @@ func TestAddOrganisationalAddresses(t *testing.T) {
 	// Add organisation
 	orgHash1 := hash.New("acme-inc")
 	pow1 := proofofwork.New(22, orgHash1.String(), 1305874)
-	res := insertOrganisationRecord(orgHash1, "../../testdata/key-5.json", pow1, []string{})
+	_ = insertOrganisationRecord(orgHash1, "../../testdata/key-5.json", pow1, []string{})
 
 	addr, _ := pkgAddress.NewAddress("example@acme-inc!")
 	pow2 := proofofwork.New(22, addr.Hash().String(), 11741366)
 
 	// Add address without token
-	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
+	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
 	assert.NotNil(t, res)
 	assert.Equal(t, 400, res.StatusCode)
 	assert.Contains(t, res.Body, "invalid data")
@@ -409,7 +405,6 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	pow3 := proofofwork.New(22, orgHash3.String(), 21232)
 	res = insertOrganisationRecord(orgHash3, "../../testdata/key-7.json", pow3, []string{})
 
-
 	addr, _ := pkgAddress.NewAddress("example@acme-inc!")
 	pow4 := proofofwork.New(22, addr.Hash().String(), 11741366)
 
@@ -428,7 +423,6 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 		assert.Equal(t, 200, res.StatusCode)
 	}
 
-
 	// Delete as regular user
 
 	insertRecords()
@@ -441,13 +435,13 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 
 	// Create authentication token
 	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-4.json")
-	sig := current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)
+	sig := current.Hash + current.RoutingID + strconv.FormatUint(current.Serial, 10)
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Delete as "regular" user
 	req = http.NewRequest("GET", "/", "")
 	// req.Headers.Set("authorization", "BEARER 2UxSWVAUJ/iIr59x76B9bF/CeQXDi4dTY4D73P8iJwE/CRaIpRyg1RHMbfLVM6fz3sfOammn8wzhooxfv6BVAg==")
-	req.Headers.Set("authorization", "BEARER " + authToken)
+	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
@@ -455,14 +449,13 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 404, res.StatusCode)
 
-
 	// Delete by organisation key, but without body
 
 	insertRecords()
 
 	// Create authentication token
 	privKey, _, _ = testing2.ReadTestKey("../../testdata/key-5.json")
-	sig = addr.Hash().String()+strconv.FormatUint(current.Serial, 10)
+	sig = addr.Hash().String() + strconv.FormatUint(current.Serial, 10)
 	authToken = http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Delete as correct "organisation" user, but without body
@@ -474,7 +467,6 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	req = http.NewRequest("GET", "/", "")
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
-
 
 	// Delete by organisation key, with incorrect body
 
@@ -494,7 +486,6 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
-
 	// Delete by organisation key, with correct body
 
 	ob = &organizationRequestBody{
@@ -512,19 +503,18 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 404, res.StatusCode)
 
-
 	// Delete with auth token for org2
 
 	// Create authentication token for ORG2
 	privKey, _, _ = testing2.ReadTestKey("../../testdata/key-6.json")
-	sig = addr.Hash().String()+strconv.FormatUint(current.Serial, 10)
+	sig = addr.Hash().String() + strconv.FormatUint(current.Serial, 10)
 	authToken = http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Delete as incorrect "other organisation" user
 	insertRecords()
 
 	req = http.NewRequest("GET", "/", "")
-	req.Headers.Set("authorization", "BEARER " + authToken)
+	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash(addr.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 

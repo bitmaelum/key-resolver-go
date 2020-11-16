@@ -45,7 +45,7 @@ type addressUploadBody struct {
 
 var (
 	minimumProofBits = 22
-	routeIDRegex = regexp.MustCompile("[a-f0-9]{64}")
+	routeIDRegex     = regexp.MustCompile("[a-f0-9]{64}")
 )
 
 type organizationRequestBody struct {

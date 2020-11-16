@@ -53,9 +53,9 @@ func NewSqliteResolver(dsn string) *SqliteDbResolver {
 	}
 
 	db := &SqliteDbResolver{
-		conn:      conn,
-		dsn:       dsn,
-		TimeNow:   time.Now(),
+		conn:    conn,
+		dsn:     dsn,
+		TimeNow: time.Now(),
 	}
 
 	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_address (hash VARCHAR(64) PRIMARY KEY, pubkey TEXT, routing_id VARCHAR(64), proof TEXT, serial INT)")
@@ -108,7 +108,7 @@ func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	if err != nil {
 		return nil, ErrNotFound
 	}
-	
+
 	return &ResolveInfoType{
 		Hash:      h,
 		RoutingID: rt,

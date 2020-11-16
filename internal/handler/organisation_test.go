@@ -168,7 +168,6 @@ func TestOrganisationDeletion(t *testing.T) {
 	res = DeleteOrganisationHash(orgHash1, req)
 	assert.Equal(t, 401, res.StatusCode)
 
-
 	// Fetch record
 	req = http.NewRequest("GET", "/", "")
 	res = GetOrganisationHash(orgHash1, req)
@@ -180,17 +179,16 @@ func TestOrganisationDeletion(t *testing.T) {
 	sig := current.Hash + strconv.FormatUint(current.Serial, 10)
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
-
 	// Delete wrong hash with correct auth
 	req = http.NewRequest("GET", "/", "")
-	req.Headers.Set("authorization", "BEARER " + authToken)
+	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteOrganisationHash("0000000000000000000000000E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 500, res.StatusCode)
 
 	// Delete hash with auth
 	req = http.NewRequest("GET", "/", "")
 	// req.Headers.Set("authorization", "BEARER neftRnbcaw2mfudfSkXgBT6SJ3nEXsWzyumiIcDed8y6pBoEPkJkgqCHcwqm9TuqVycjzb3PemDYfvMmUfL9BA==")
-	req.Headers.Set("authorization", "BEARER "+ authToken)
+	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteOrganisationHash(orgHash1, req)
 	assert.Equal(t, 200, res.StatusCode)
 
