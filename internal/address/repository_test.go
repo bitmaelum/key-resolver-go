@@ -36,6 +36,7 @@ func TestDynamoRepo(t *testing.T) {
 
 func TestBoltResolver(t *testing.T) {
 	_ = os.Setenv("USE_BOLT", "1")
+	_ = os.Setenv("BOLT_DB_FILE", "./mockdb.db")
 	SetDefaultRepository(nil)
 
 	r := GetResolveRepository()

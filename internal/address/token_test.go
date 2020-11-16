@@ -20,6 +20,9 @@
 package address
 
 import (
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -76,4 +79,10 @@ func TestToken(t *testing.T) {
 	}
 	ok = VerifyInviteToken(token, addrHash, "12345678", *pubKey)
 	assert.False(t, ok)
+}
+
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
 }

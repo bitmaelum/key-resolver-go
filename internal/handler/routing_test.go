@@ -21,6 +21,9 @@ package handler
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -201,4 +204,9 @@ func getRoutingRecord(res *http.Response) routing.ResolveInfoType {
 		PubKey:  tmp.PublicKey,
 		Serial:  tmp.SerialNumber,
 	}
+}
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
 }

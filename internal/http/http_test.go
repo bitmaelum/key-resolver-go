@@ -20,6 +20,9 @@
 package http
 
 import (
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -82,4 +85,9 @@ func TestValidateSignature(t *testing.T) {
 	req = NewRequest("GET", "/", "")
 	req.Headers.Set("authorization", "")
 	assert.False(t, req.ValidateAuthenticationToken(PubKeyData, hashData))
+}
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
 }
