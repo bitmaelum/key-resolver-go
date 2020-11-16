@@ -101,7 +101,7 @@ func DeleteOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response 
 		return http.CreateError("cannot find record", 404)
 	}
 
-	if !req.ValidateSignature(current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 
@@ -115,7 +115,7 @@ func DeleteOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response 
 }
 
 func updateOrganisation(uploadBody organisationUploadBody, req http.Request, current *organisation.ResolveInfoType) *http.Response {
-	if !req.ValidateSignature(current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 

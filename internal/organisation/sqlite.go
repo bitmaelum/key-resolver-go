@@ -31,14 +31,14 @@ import (
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
-type sqliteDbResolver struct {
+type SqliteDbResolver struct {
 	conn    *sql.DB
 	dsn     string
 	TimeNow time.Time
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
-func NewSqliteResolver(dsn string) *sqliteDbResolver {
+func NewSqliteResolver(dsn string) *SqliteDbResolver {
 	if !strings.HasPrefix(dsn, "file:") {
 		if dsn == ":memory:" {
 			dsn = "file::memory:?mode=memory"
@@ -52,7 +52,7 @@ func NewSqliteResolver(dsn string) *sqliteDbResolver {
 		return nil
 	}
 
-	db := &sqliteDbResolver{
+	db := &SqliteDbResolver{
 		conn:    conn,
 		dsn:     dsn,
 		TimeNow: time.Now(),
@@ -62,7 +62,7 @@ func NewSqliteResolver(dsn string) *sqliteDbResolver {
 	return db
 }
 
-func (r *sqliteDbResolver) Update(info *ResolveInfoType, publicKey, proof string, validations []string) (bool, error) {
+func (r *SqliteDbResolver) Update(info *ResolveInfoType, publicKey, proof string, validations []string) (bool, error) {
 	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
 
@@ -85,7 +85,7 @@ func (r *sqliteDbResolver) Update(info *ResolveInfoType, publicKey, proof string
 	return count != 0, err
 }
 
-func (r *sqliteDbResolver) Create(hash, publicKey, proof string, validations []string) (bool, error) {
+func (r *SqliteDbResolver) Create(hash, publicKey, proof string, validations []string) (bool, error) {
 	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
 	b, err := json.Marshal(validations)
@@ -102,7 +102,7 @@ func (r *sqliteDbResolver) Create(hash, publicKey, proof string, validations []s
 	return count != 0, err
 }
 
-func (r *sqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
+func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	var (
 		h   string
 		pk  string
@@ -132,7 +132,7 @@ func (r *sqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	}, nil
 }
 
-func (r *sqliteDbResolver) Delete(hash string) (bool, error) {
+func (r *SqliteDbResolver) Delete(hash string) (bool, error) {
 	res, err := r.conn.Exec("DELETE FROM mock_organisation WHERE hash LIKE ?", hash)
 	if err != nil {
 		return false, err

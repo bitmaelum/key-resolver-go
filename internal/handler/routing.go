@@ -88,7 +88,7 @@ func PostRoutingHash(routingHash hash.Hash, req http.Request) *http.Response {
 }
 
 func updateRouting(uploadBody routingUploadBody, req http.Request, current *routing.ResolveInfoType) *http.Response {
-	if !req.ValidateSignature(current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 
@@ -127,7 +127,7 @@ func DeleteRoutingHash(routingHash hash.Hash, req http.Request) *http.Response {
 		return http.CreateError("cannot find record", 404)
 	}
 
-	if !req.ValidateSignature(current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 

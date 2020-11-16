@@ -89,7 +89,7 @@ func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool,
 		Routing:   routing,
 		PublicKey: publicKey,
 		Proof:     proof,
-		Serial:    uint64(timeNow().UnixNano()),
+		Serial:    uint64(TimeNow().UnixNano()),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)

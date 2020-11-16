@@ -34,7 +34,7 @@ func TestToken(t *testing.T) {
 	_, pubKey2, err := testing2.ReadTestKey("../../testdata/key-4.json")
 	assert.NoError(t, err)
 
-	timeNow = func() time.Time {
+	TimeNow = func() time.Time {
 		return time.Date(2010, 05, 10, 12, 34, 56, 0, time.UTC)
 	}
 
@@ -71,7 +71,7 @@ func TestToken(t *testing.T) {
 	assert.False(t, ok)
 
 	// Verify incorrect expired time
-	timeNow = func() time.Time {
+	TimeNow = func() time.Time {
 		return time.Date(2010, 12, 31, 12, 34, 56, 0, time.UTC)
 	}
 	ok = VerifyInviteToken(token, addrHash, "12345678", *pubKey)

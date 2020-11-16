@@ -30,7 +30,7 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 )
 
-var timeNow = time.Now
+var TimeNow = time.Now
 
 func GenerateToken(addrHash hash.Hash, routingID string, validUntil time.Time, pk bmcrypto.PrivKey) string {
 	h := sha256.Sum256([]byte(addrHash.String() + routingID + strconv.FormatInt(validUntil.Unix(), 10)))
@@ -74,5 +74,5 @@ func VerifyInviteToken(token string, addrHash hash.Hash, routingID string, key b
 		return false
 	}
 	expiry := time.Unix(int64(ts), 0)
-	return !timeNow().After(expiry)
+	return TimeNow().Before(expiry)
 }

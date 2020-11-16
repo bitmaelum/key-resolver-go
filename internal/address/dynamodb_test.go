@@ -108,7 +108,7 @@ func TestCreate(t *testing.T) {
 	client, mock = dynamock.New()
 	resolver := NewDynamoDBResolver(client, "mock_address_table")
 
-	timeNow = func() time.Time {
+	TimeNow = func() time.Time {
 		return time.Date(2010, 05, 10, 12, 34, 56, 0, time.UTC)
 	}
 

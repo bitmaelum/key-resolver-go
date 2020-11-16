@@ -140,7 +140,7 @@ func deleteAddressHashByOwner(addrHash hash.Hash, req http.Request) *http.Respon
 		return http.CreateError("cannot find record", 404)
 	}
 
-	if !req.ValidateSignature(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 
@@ -181,7 +181,7 @@ func deleteAddressHashByOrganization(addrHash hash.Hash, organizationInfo *organ
 		return http.CreateError("error validating address", 401)
 	}
 
-	if !req.ValidateSignature(currentOrg.PubKey, currentAddress.Hash+strconv.FormatUint(currentAddress.Serial, 10)) {
+	if !req.ValidateAuthenticationToken(currentOrg.PubKey, currentAddress.Hash+strconv.FormatUint(currentAddress.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 
@@ -195,7 +195,7 @@ func deleteAddressHashByOrganization(addrHash hash.Hash, organizationInfo *organ
 }
 
 func updateAddress(uploadBody addressUploadBody, req http.Request, current *address.ResolveInfoType) *http.Response {
-	if !req.ValidateSignature(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 
