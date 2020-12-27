@@ -1,4 +1,23 @@
-package routing
+// Copyright (c) 2020 BitMaelum Authors
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+package address
 
 import (
 	"errors"
@@ -9,10 +28,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
 
 type dynamoDbResolver struct {
-	C         *dynamodb.DynamoDB
+	Dyna      dynamodbiface.DynamoDBAPI
 	TableName string
 }
 
@@ -24,13 +44,14 @@ type Record struct {
 	Hash      string `dynamodbav:"hash"`
 	Routing   string `dynamodbav:"routing"`
 	PublicKey string `dynamodbav:"public_key"`
+	Proof     string `dynamodbav:"proof"`
 	Serial    uint64 `dynamodbav:"sn"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
-func NewDynamoDBResolver(client *dynamodb.DynamoDB, tableName string) Repository {
+func NewDynamoDBResolver(client dynamodbiface.DynamoDBAPI, tableName string) Repository {
 	return &dynamoDbResolver{
-		C:         client,
+		Dyna:      client,
 		TableName: tableName,
 	}
 }
@@ -40,20 +61,20 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":r":   {S: aws.String(routing)},
+			":s":   {S: aws.String(routing)},
 			":pk":  {S: aws.String(publicKey)},
 			":sn":  {N: aws.String(serial)},
 			":csn": {N: aws.String(strconv.FormatUint(info.Serial, 10))},
 		},
 		TableName:           aws.String(r.TableName),
-		UpdateExpression:    aws.String("SET routing=:r, public_key=:pk, sn=:sn"),
+		UpdateExpression:    aws.String("SET routing=:s, public_key=:pk, sn=:sn"),
 		ConditionExpression: aws.String("sn = :csn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(info.Hash)},
 		},
 	}
 
-	_, err := r.C.UpdateItem(input)
+	_, err := r.Dyna.UpdateItem(input)
 	if err != nil {
 		log.Print(err)
 		return false, err
@@ -62,12 +83,13 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 	return true, nil
 }
 
-func (r *dynamoDbResolver) Create(hash, routing, publicKey string) (bool, error) {
+func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
 	record := Record{
 		Hash:      hash,
 		Routing:   routing,
 		PublicKey: publicKey,
-		Serial:    uint64(time.Now().UnixNano()),
+		Proof:     proof,
+		Serial:    uint64(TimeNow().UnixNano()),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)
@@ -81,12 +103,12 @@ func (r *dynamoDbResolver) Create(hash, routing, publicKey string) (bool, error)
 		TableName: aws.String(r.TableName),
 	}
 
-	_, err = r.C.PutItem(input)
+	_, err = r.Dyna.PutItem(input)
 	return err == nil, err
 }
 
 func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
-	result, err := r.C.GetItem(&dynamodb.GetItemInput{
+	result, err := r.Dyna.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},
@@ -111,15 +133,16 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	}
 
 	return &ResolveInfoType{
-		Hash:    record.Hash,
-		Routing: record.Routing,
-		PubKey:  record.PublicKey,
-		Serial:  record.Serial,
+		Hash:      record.Hash,
+		RoutingID: record.Routing,
+		PubKey:    record.PublicKey,
+		Proof:     record.Proof,
+		Serial:    record.Serial,
 	}, nil
 }
 
 func (r *dynamoDbResolver) Delete(hash string) (bool, error) {
-	_, err := r.C.DeleteItem(&dynamodb.DeleteItemInput{
+	_, err := r.Dyna.DeleteItem(&dynamodb.DeleteItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},

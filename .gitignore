@@ -1,2 +1,4 @@
 deployment.zip
-main
+release/*
+mockdb.db
+mockdb.db.lock
