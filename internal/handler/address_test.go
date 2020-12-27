@@ -86,7 +86,7 @@ func TestAddress(t *testing.T) {
 	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
 	assert.NotNil(t, res)
 	assert.Equal(t, 401, res.StatusCode)
-	assert.Contains(t, res.Body, "incorrect proof-of-work")
+	assert.Contains(t, res.Body, "proof-of-work too weak (need 22 bits)")
 
 	// Insert new hash
 	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow)
@@ -534,6 +534,10 @@ func setupRepo() {
 	routing.SetDefaultRepository(sr3)
 
 	setRepoTime(time.Date(2010, 04, 07, 12, 34, 56, 0, time.UTC))
+
+	// Decrease number of bits for testing purposes
+	MinimumProofBitsAddress = 22
+	MinimumProofBitsOrganisation = 22
 }
 
 func setRepoTime(t time.Time) {

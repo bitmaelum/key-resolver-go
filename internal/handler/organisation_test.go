@@ -46,6 +46,8 @@ type organisationInfoType = struct {
 func TestOrganisation(t *testing.T) {
 	setupRepo()
 
+	MinimumProofBitsOrganisation = 22
+
 	orgHash := hash.New("acme-inc!")
 	pow := proofofwork.New(22, orgHash.String(), 1783097)
 
@@ -81,6 +83,8 @@ func TestOrganisation(t *testing.T) {
 
 func TestOrganisationUpdate(t *testing.T) {
 	setupRepo()
+
+	MinimumProofBitsOrganisation = 22
 
 	orgHash1 := hash.New("acme-inc")
 	pow1 := proofofwork.New(22, orgHash1.String(), 1305874)
@@ -135,6 +139,8 @@ func TestOrganisationUpdate(t *testing.T) {
 
 func TestOrganisationDeletion(t *testing.T) {
 	setupRepo()
+
+	MinimumProofBitsOrganisation = 22
 
 	orgHash1 := hash.New("acme-inc")
 	pow1 := proofofwork.New(22, orgHash1.String(), 1305874)

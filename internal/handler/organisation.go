@@ -33,9 +33,8 @@ import (
 )
 
 var (
-	minimumProofBitsOrganisation = 29
+	MinimumProofBitsOrganisation = 29
 )
-
 
 type organisationUploadBody struct {
 	PublicKey   *bmcrypto.PubKey         `json:"public_key"`
@@ -137,13 +136,12 @@ func updateOrganisation(uploadBody organisationUploadBody, req http.Request, cur
 }
 
 func createOrganisation(orgHash hash.Hash, uploadBody organisationUploadBody) *http.Response {
-	if !uploadBody.Proof.IsValid() {
+	if !uploadBody.Proof.IsValid() || uploadBody.Proof.Data != orgHash.String() {
 		return http.CreateError("incorrect proof-of-work", 401)
 	}
 
-	// Sanity check to see if the proof given actually matches our wanted data and minimum bits
-	if uploadBody.Proof.Data != orgHash.String() || uploadBody.Proof.Bits < minimumProofBitsOrganisation {
-		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", minimumProofBitsAddress), 401)
+	if uploadBody.Proof.Bits < MinimumProofBitsOrganisation {
+		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", MinimumProofBitsAddress), 401)
 	}
 
 	repo := organisation.GetResolveRepository()

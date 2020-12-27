@@ -45,8 +45,8 @@ type addressUploadBody struct {
 }
 
 var (
-	minimumProofBitsAddress = 27
-	routeIDRegex     = regexp.MustCompile("[a-f0-9]{64}")
+	MinimumProofBitsAddress = 27
+	routeIDRegex            = regexp.MustCompile("[a-f0-9]{64}")
 )
 
 type organizationRequestBody struct {
@@ -212,13 +212,14 @@ func updateAddress(uploadBody addressUploadBody, req http.Request, current *addr
 }
 
 func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Response {
-	if !uploadBody.Proof.IsValid() {
+	// Validate proof of work
+	if !uploadBody.Proof.IsValid() || uploadBody.Proof.Data != addrHash.String() {
 		return http.CreateError("incorrect proof-of-work", 401)
 	}
 
-	// Sanity check to see if the proof given actually matches our wanted data and minimum bits
-	if uploadBody.Proof.Data != addrHash.String() || uploadBody.Proof.Bits < minimumProofBitsAddress {
-		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", minimumProofBitsAddress), 401)
+	// Check minimum number of work bits
+	if uploadBody.Proof.Bits < MinimumProofBitsAddress {
+		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", MinimumProofBitsAddress), 401)
 	}
 
 	repo := address.GetResolveRepository()
