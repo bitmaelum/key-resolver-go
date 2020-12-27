@@ -21,6 +21,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 
@@ -30,6 +31,11 @@ import (
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 	"github.com/bitmaelum/key-resolver-go/internal/organisation"
 )
+
+var (
+	minimumProofBitsOrganisation = 29
+)
+
 
 type organisationUploadBody struct {
 	PublicKey   *bmcrypto.PubKey         `json:"public_key"`
@@ -136,8 +142,8 @@ func createOrganisation(orgHash hash.Hash, uploadBody organisationUploadBody) *h
 	}
 
 	// Sanity check to see if the proof given actually matches our wanted data and minimum bits
-	if uploadBody.Proof.Data != orgHash.String() || uploadBody.Proof.Bits < minimumProofBits {
-		return http.CreateError("incorrect proof-of-work", 401)
+	if uploadBody.Proof.Data != orgHash.String() || uploadBody.Proof.Bits < minimumProofBitsOrganisation {
+		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", minimumProofBitsAddress), 401)
 	}
 
 	repo := organisation.GetResolveRepository()

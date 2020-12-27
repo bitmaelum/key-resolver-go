@@ -21,6 +21,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
 	"strconv"
@@ -44,7 +45,7 @@ type addressUploadBody struct {
 }
 
 var (
-	minimumProofBits = 22
+	minimumProofBitsAddress = 27
 	routeIDRegex     = regexp.MustCompile("[a-f0-9]{64}")
 )
 
@@ -216,8 +217,8 @@ func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Respo
 	}
 
 	// Sanity check to see if the proof given actually matches our wanted data and minimum bits
-	if uploadBody.Proof.Data != addrHash.String() || uploadBody.Proof.Bits < minimumProofBits {
-		return http.CreateError("incorrect proof-of-work", 401)
+	if uploadBody.Proof.Data != addrHash.String() || uploadBody.Proof.Bits < minimumProofBitsAddress {
+		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", minimumProofBitsAddress), 401)
 	}
 
 	repo := address.GetResolveRepository()
