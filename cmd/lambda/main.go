@@ -21,7 +21,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -37,8 +36,6 @@ import (
 
 // HandleRequest checks the incoming route and calls the correct handler for it
 func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
-	fmt.Println(req.RouteKey)
-
 	if req.RouteKey == "GET /" {
 		return getIndex(req), nil
 	}
