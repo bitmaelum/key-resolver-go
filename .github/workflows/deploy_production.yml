@@ -16,7 +16,7 @@ jobs:
           apt-get install -y zip awscli
       - name: Build and zip
         run: |
-          GOOS=linux go build -o main cmd/lambda/main.go
+          CGO_ENABLED=0 GOOS=linux go build -o main cmd/lambda/main.go
           zip -r ./function.zip main
       - name: deploy zip to lambda
         run: |
