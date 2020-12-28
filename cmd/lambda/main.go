@@ -72,6 +72,10 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 		httpResp = handler.DeleteOrganisationHash(*h, *httpReq)
 	case "POST /organisation/{hash}":
 		httpResp = handler.PostOrganisationHash(*h, *httpReq)
+
+	// Global configuration
+	case "GET /config.json":
+		httpResp = handler.GetConfig(hash.New(""), *httpReq)
 	}
 
 	if httpResp == nil {

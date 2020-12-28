@@ -88,6 +88,7 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", requestWrapper(getLogo)).Methods("GET")
+	router.HandleFunc("/config.json", requestWrapper(handler.GetConfig)).Methods("GET")
 
 	router.HandleFunc("/address/{hash}", requestWrapper(handler.GetAddressHash)).Methods("GET")
 	router.HandleFunc("/address/{hash}", requestWrapper(handler.DeleteAddressHash)).Methods("DELETE")

@@ -17,16 +17,20 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-package internal
+package handler
 
-var Version = "0.0.6"
+import (
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
+	"github.com/bitmaelum/key-resolver-go/internal/http"
+)
 
-var Logo = " ____  _ _   __  __            _\n" +
-	"|  _ \\(_) | |  \\/  |          | |   " + Version + "\n" +
-	"| |_) |_| |_| \\  / | __ _  ___| |_   _ _ __ ___\n" +
-	"|  _ <| | __| |\\/| |/ _` |/ _ \\ | | | | '_ ` _ \\\n" +
-	"| |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |\n" +
-	"|____/|_|\\__|_|  |_|\\__,_|\\___|_|\\__,_|_| |_| |_|\n" +
-	"\n" +
-	"   P r i v a c y   i s   y o u r s   a g a i n\n" +
-	"\n"
+func GetConfig(_ hash.Hash, _ http.Request) *http.Response {
+	data := http.RawJSONOut{
+		"proof_of_work": http.RawJSONOut{
+			"address":      MinimumProofBitsAddress,
+			"organisation": MinimumProofBitsOrganisation,
+		},
+	}
+
+	return http.CreateOutput(data, 200)
+}
