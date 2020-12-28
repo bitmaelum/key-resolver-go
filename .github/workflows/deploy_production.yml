@@ -16,7 +16,7 @@ jobs:
           apt-get install -y zip awscli
       - name: Build and zip
         run: |
-          GOOS=linux go build -o main cmd/lambda/main.go
+          CGO_ENABLED=0 GOOS=linux go build -o main cmd/lambda/main.go
           zip -r ./function.zip main
       - name: deploy zip to lambda
         run: |
@@ -25,3 +25,4 @@ jobs:
           AWS_DEFAULT_REGION: eu-west-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  

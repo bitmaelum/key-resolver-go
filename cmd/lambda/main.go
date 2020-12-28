@@ -20,6 +20,7 @@
 package main
 
 import (
+	"encoding/json"
 	"math/rand"
 	"strings"
 	"time"
@@ -38,6 +39,11 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	if req.RouteKey == "GET /" {
 		return getIndex(req), nil
 	}
+
+	if req.RouteKey == "GET /config.json" {
+		return getConfig(req), nil
+	}
+
 
 	h, err := hash.NewFromHash(req.PathParameters["hash"])
 	if err != nil {
@@ -93,6 +99,29 @@ func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse
 
 	return resp
 }
+
+func getConfig(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
+	headers := map[string]string{}
+	headers["Content-Type"] = "application/json"
+
+	data := http.RawJSONOut{
+		"proof_of_work": http.RawJSONOut{
+			"address":      handler.MinimumProofBitsAddress,
+			"organisation": handler.MinimumProofBitsOrganisation,
+		},
+	}
+
+	strJson, _ := json.MarshalIndent(data, "", "  ")
+
+	resp := &events.APIGatewayV2HTTPResponse{
+		StatusCode: 200,
+		Headers:    headers,
+		Body:       string(strJson),
+	}
+
+	return resp
+}
+
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
