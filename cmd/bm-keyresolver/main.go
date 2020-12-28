@@ -20,6 +20,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
 	nethttp "net/http"
@@ -74,6 +75,22 @@ func getLogo(_ hash.Hash, _ http.Request) *http.Response {
 	return &resp
 }
 
+func getConfig(_ hash.Hash, _ http.Request) *http.Response {
+	data := http.RawJSONOut{
+		"proof_of_work": http.RawJSONOut{
+			"address":      handler.MinimumProofBitsAddress,
+			"organisation": handler.MinimumProofBitsOrganisation,
+		},
+	}
+
+	strJson, _ := json.MarshalIndent(data, "", "  ")
+
+	resp := http.NewResponse(200, string(strJson))
+	resp.Headers.Set("content-type", "text/plain")
+
+	return &resp
+}
+
 func main() {
 	boltDbPath := flag.String("db", "./bolt.db", "Bolt DB path")
 	TcpPort := flag.String("port", "443", "HTTP(s) port to run")
@@ -88,6 +105,7 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", requestWrapper(getLogo)).Methods("GET")
+	router.HandleFunc("/config.json", requestWrapper(getConfig)).Methods("GET")
 
 	router.HandleFunc("/address/{hash}", requestWrapper(handler.GetAddressHash)).Methods("GET")
 	router.HandleFunc("/address/{hash}", requestWrapper(handler.DeleteAddressHash)).Methods("DELETE")
