@@ -115,14 +115,15 @@ func TestCreate(t *testing.T) {
 	result := dynamodb.PutItemOutput{}
 
 	items := map[string]*dynamodb.AttributeValue{
-		"hash":       {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
-		"proof":      {S: aws.String("proof")},
-		"public_key": {S: aws.String("pubkey")},
-		"routing":    {S: aws.String("12345678")},
-		"sn":         {N: aws.String("1273494896000000000")},
+		"hash":        {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
+		"proof":       {S: aws.String("proof")},
+		"public_key":  {S: aws.String("ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=")},
+		"fingerprint": {S: aws.String("b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758")},
+		"routing":     {S: aws.String("12345678")},
+		"sn":          {N: aws.String("1273494896000000000")},
 	}
 	mock.ExpectPutItem().ToTable("mock_address_table").WithItems(items).WillReturns(result)
-	ok, err := resolver.Create("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2", "12345678", "pubkey", "proof")
+	ok, err := resolver.Create("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2", "12345678", "ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=", "proof")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 }
@@ -140,11 +141,12 @@ func TestUpdate(t *testing.T) {
 	mock.ExpectUpdateItem().ToTable("mock_address_table").WithKeys(expectKey)
 
 	info := &ResolveInfoType{
-		Hash:      "cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2",
-		RoutingID: "12345678",
-		PubKey:    "pubkey",
-		Proof:     "proof",
-		Serial:    1273494896000000000,
+		Hash:        "cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2",
+		RoutingID:   "12345678",
+		PubKey:      "ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=",
+		Fingerprint: "b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758",
+		Proof:       "proof",
+		Serial:      1273494896000000000,
 	}
 	ok, err := resolver.Update(info, "555555555", "pubkey222")
 	assert.NoError(t, err)

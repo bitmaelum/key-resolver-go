@@ -19,14 +19,16 @@
 
 package internal
 
-var Version = "0.0.7"
+import (
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+)
 
-var Logo = " ____  _ _   __  __            _\n" +
-	"|  _ \\(_) | |  \\/  |          | |   " + Version + "\n" +
-	"| |_) |_| |_| \\  / | __ _  ___| |_   _ _ __ ___\n" +
-	"|  _ <| | __| |\\/| |/ _` |/ _ \\ | | | | '_ ` _ \\\n" +
-	"| |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |\n" +
-	"|____/|_|\\__|_|  |_|\\__,_|\\___|_|\\__,_|_| |_| |_|\n" +
-	"\n" +
-	"   P r i v a c y   i s   y o u r s   a g a i n\n" +
-	"\n"
+// Fingerprint will return the fingerprint of the given key
+func Fingerprint(s string) string {
+	key, err := bmcrypto.NewPubKey(s)
+	if err != nil {
+		return ""
+	}
+
+	return key.Fingerprint()
+}

@@ -58,6 +58,7 @@ func GetOrganisationHash(orgHash hash.Hash, _ http.Request) *http.Response {
 	data := http.RawJSONOut{
 		"hash":          info.Hash,
 		"public_key":    info.PubKey,
+		"fingerprint":   info.Fingerprint,
 		"proof":         info.Proof,
 		"validations":   info.Validations,
 		"serial_number": info.Serial,

@@ -19,14 +19,13 @@
 
 package internal
 
-var Version = "0.0.7"
+import (
+	"testing"
 
-var Logo = " ____  _ _   __  __            _\n" +
-	"|  _ \\(_) | |  \\/  |          | |   " + Version + "\n" +
-	"| |_) |_| |_| \\  / | __ _  ___| |_   _ _ __ ___\n" +
-	"|  _ <| | __| |\\/| |/ _` |/ _ \\ | | | | '_ ` _ \\\n" +
-	"| |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |\n" +
-	"|____/|_|\\__|_|  |_|\\__,_|\\___|_|\\__,_|_| |_| |_|\n" +
-	"\n" +
-	"   P r i v a c y   i s   y o u r s   a g a i n\n" +
-	"\n"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestFingerprint(t *testing.T) {
+	assert.Equal(t, "b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758", Fingerprint("ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU="))
+	assert.Equal(t, "", Fingerprint("incorrect"))
+}

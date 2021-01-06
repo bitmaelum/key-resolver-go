@@ -76,7 +76,7 @@ test_staticcheck:
 
 test_ineffassign:
 	echo "Check ineffassign"
-	$(GO_INEFF_BIN) ./*
+	$(GO_INEFF_BIN) ./...
 
 test_gocyclo:
 	echo "Check gocyclo"

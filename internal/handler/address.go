@@ -71,6 +71,7 @@ func GetAddressHash(hash hash.Hash, _ http.Request) *http.Response {
 		"hash":          info.Hash,
 		"routing_id":    info.RoutingID,
 		"public_key":    info.PubKey,
+		"fingerprint":   info.Fingerprint,
 		"serial_number": info.Serial,
 		"proof":         info.Proof,
 	}

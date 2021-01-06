@@ -27,6 +27,7 @@ import (
 
 	"database/sql"
 
+	"github.com/bitmaelum/key-resolver-go/internal"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
@@ -58,7 +59,7 @@ func NewSqliteResolver(dsn string) *SqliteDbResolver {
 		TimeNow: time.Now(),
 	}
 
-	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_address (hash VARCHAR(64) PRIMARY KEY, pubkey TEXT, routing_id VARCHAR(64), proof TEXT, serial INT)")
+	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_address (hash VARCHAR(64) PRIMARY KEY, pubkey TEXT, fingerprint TEXT, routing_id VARCHAR(64), proof TEXT, serial INT)")
 	if err != nil {
 		return nil
 	}
@@ -69,12 +70,12 @@ func NewSqliteResolver(dsn string) *SqliteDbResolver {
 func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
 	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	st, err := r.conn.Prepare("UPDATE mock_address SET routing_id=?, pubkey=?, serial=? WHERE hash=? AND serial=?")
+	st, err := r.conn.Prepare("UPDATE mock_address SET routing_id=?, pubkey=?, fingerprint=?, serial=? WHERE hash=? AND serial=?")
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(routing, publicKey, newSerial, info.Hash, info.Serial)
+	res, err := st.Exec(routing, publicKey, internal.Fingerprint(publicKey), newSerial, info.Hash, info.Serial)
 	if err != nil {
 		return false, err
 	}
@@ -86,7 +87,7 @@ func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 func (r *SqliteDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
 	serial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?)", hash, publicKey, routing, proof, serial)
+	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, ?)", hash, publicKey, internal.Fingerprint(publicKey), routing, proof, serial)
 	if err != nil {
 		return false, err
 	}
@@ -99,22 +100,24 @@ func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	var (
 		h   string
 		pk  string
+		fp  string
 		rt  string
 		pow string
 		sn  uint64
 	)
 
-	err := r.conn.QueryRow("SELECT hash, pubkey, routing_id, proof, serial FROM mock_address WHERE hash LIKE ?", hash).Scan(&h, &pk, &rt, &pow, &sn)
+	err := r.conn.QueryRow("SELECT hash, pubkey, fingerprint, routing_id, proof, serial FROM mock_address WHERE hash LIKE ?", hash).Scan(&h, &pk, &fp, &rt, &pow, &sn)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 
 	return &ResolveInfoType{
-		Hash:      h,
-		RoutingID: rt,
-		PubKey:    pk,
-		Proof:     pow,
-		Serial:    sn,
+		Hash:        h,
+		RoutingID:   rt,
+		PubKey:      pk,
+		Fingerprint: fp,
+		Proof:       pow,
+		Serial:      sn,
 	}, nil
 }
 

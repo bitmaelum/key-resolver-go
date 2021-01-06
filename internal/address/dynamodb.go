@@ -21,6 +21,7 @@ package address
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -29,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/bitmaelum/key-resolver-go/internal"
 )
 
 type dynamoDbResolver struct {
@@ -41,11 +43,12 @@ var ErrNotFound = errors.New("record not found")
 
 // Record holds a DynamoDB record
 type Record struct {
-	Hash      string `dynamodbav:"hash"`
-	Routing   string `dynamodbav:"routing"`
-	PublicKey string `dynamodbav:"public_key"`
-	Proof     string `dynamodbav:"proof"`
-	Serial    uint64 `dynamodbav:"sn"`
+	Hash        string `dynamodbav:"hash"`
+	Routing     string `dynamodbav:"routing"`
+	PublicKey   string `dynamodbav:"public_key"`
+	Fingerprint string `dynamodbav:"fingerprint"`
+	Proof       string `dynamodbav:"proof"`
+	Serial      uint64 `dynamodbav:"sn"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
@@ -63,11 +66,12 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":s":   {S: aws.String(routing)},
 			":pk":  {S: aws.String(publicKey)},
+			":fp":  {S: aws.String(internal.Fingerprint(publicKey))},
 			":sn":  {N: aws.String(serial)},
 			":csn": {N: aws.String(strconv.FormatUint(info.Serial, 10))},
 		},
 		TableName:           aws.String(r.TableName),
-		UpdateExpression:    aws.String("SET routing=:s, public_key=:pk, sn=:sn"),
+		UpdateExpression:    aws.String("SET routing=:s, public_key=:pk, fingerprint=:fp, sn=:sn"),
 		ConditionExpression: aws.String("sn = :csn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(info.Hash)},
@@ -85,11 +89,12 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 
 func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
 	record := Record{
-		Hash:      hash,
-		Routing:   routing,
-		PublicKey: publicKey,
-		Proof:     proof,
-		Serial:    uint64(TimeNow().UnixNano()),
+		Hash:        hash,
+		Routing:     routing,
+		PublicKey:   publicKey,
+		Fingerprint: internal.Fingerprint(publicKey),
+		Proof:       proof,
+		Serial:      uint64(TimeNow().UnixNano()),
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)
@@ -133,11 +138,12 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	}
 
 	return &ResolveInfoType{
-		Hash:      record.Hash,
-		RoutingID: record.Routing,
-		PubKey:    record.PublicKey,
-		Proof:     record.Proof,
-		Serial:    record.Serial,
+		Hash:        record.Hash,
+		RoutingID:   record.Routing,
+		PubKey:      record.PublicKey,
+		Fingerprint: record.Fingerprint,
+		Proof:       record.Proof,
+		Serial:      record.Serial,
 	}, nil
 }
 
