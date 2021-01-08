@@ -44,7 +44,6 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 		return getConfig(req), nil
 	}
 
-
 	h, err := hash.NewFromHash(req.PathParameters["hash"])
 	if err != nil {
 		resp := http.CreateError("Incorrect hash address", 400)
@@ -121,7 +120,6 @@ func getConfig(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPRespons
 
 	return resp
 }
-
 
 func main() {
 	rand.Seed(time.Now().UnixNano())

@@ -30,7 +30,6 @@ import (
 type ResolveInfoType struct {
 	Hash        string
 	PubKey      string
-	Fingerprint string
 	Proof       string
 	Validations []string
 	Serial      uint64

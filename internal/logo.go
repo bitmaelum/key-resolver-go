@@ -19,7 +19,7 @@
 
 package internal
 
-var Version = "0.0.7"
+var Version = "0.0.8"
 
 var Logo = " ____  _ _   __  __            _\n" +
 	"|  _ \\(_) | |  \\/  |          | |   " + Version + "\n" +

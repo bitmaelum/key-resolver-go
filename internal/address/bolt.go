@@ -76,7 +76,6 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 			Hash:      hash,
 			RoutingID: routing,
 			PubKey:    publicKey,
-			Fingerprint: internal.Fingerprint(publicKey),
 			Proof:     proof,
 			Serial:    uint64(time.Now().UnixNano()),
 		}
