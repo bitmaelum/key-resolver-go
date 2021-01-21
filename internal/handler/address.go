@@ -103,6 +103,12 @@ func PostAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 	}
 
 	if current == nil {
+		// When specifying an organisation, we need an organisation token
+		if !uploadBody.OrgHash.IsEmpty() && uploadBody.OrgToken == "" {
+			log.Print("need token for org")
+			return http.CreateError("need org token when creating", 400)
+		}
+
 		// Does not exist yet
 		return createAddress(addrHash, *uploadBody)
 	}
@@ -239,12 +245,6 @@ func validateAddressBody(addrHash hash.Hash, body addressUploadBody) bool {
 	// Check if the user + org hash matches the address hash
 	if !addrHash.Verify(body.UserHash, body.OrgHash) {
 		log.Print("verify hash failed")
-		return false
-	}
-
-	// When specifying an organisation, we need an organisation token
-	if !body.OrgHash.IsEmpty() && body.OrgToken == "" {
-		log.Print("need token for org")
 		return false
 	}
 

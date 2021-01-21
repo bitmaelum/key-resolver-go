@@ -340,7 +340,7 @@ func TestAddOrganisationalAddresses(t *testing.T) {
 	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
 	assert.NotNil(t, res)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "invalid data")
+	assert.Contains(t, res.Body, "need org token when creating")
 
 	// Add address with wrong token
 	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "foobar", pow2)
@@ -387,6 +387,56 @@ func TestAddOrganisationalAddresses(t *testing.T) {
 	assert.Equal(t, "ed25519 MCowBQYDK2VwAyEA0zlS1exf5ZbxneUfQHbiiwPkDOJoXlkAQolRRGD1K4g=", info.PubKey)
 	assert.Equal(t, "f5c62bf28bb19b66d67d869acb7255168fe54413442dae0c5bdd626b8eac927e", info.RoutingID)
 	assert.Equal(t, uint64(1270643696000000000), info.Serial)
+}
+
+func TestAllowUpdateToOrgAddressWithoutToken(t *testing.T) {
+	setupRepo()
+
+	// Add organisation
+	orgHash1 := hash.New("acme-inc")
+	pow1 := proofofwork.New(22, orgHash1.String(), 1305874)
+	_ = insertOrganisationRecord(orgHash1, "../../testdata/key-5.json", pow1, []string{})
+
+	addr, _ := pkgAddress.NewAddress("example@acme-inc!")
+	pow2 := proofofwork.New(22, addr.Hash().String(), 11741366)
+
+	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-5.json")
+	inviteToken := address.GenerateToken(addr.Hash(), fakeRoutingId.String(), time.Date(2010, 05, 05, 12, 0, 0, 0, time.UTC), *privKey)
+
+	// Add address with token
+	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), inviteToken, pow2)
+	assert.NotNil(t, res)
+	assert.Equal(t, 201, res.StatusCode)
+
+	privKey, pubKey, err := testing2.ReadTestKey("../../testdata/key-4.json")
+	assert.NoError(t, err)
+
+	// Update record with without org token
+	body := &addressUploadBody{
+		UserHash:  addr.LocalHash(),
+		OrgHash:   addr.OrgHash(),
+		OrgToken:  "",
+		PublicKey: pubKey,
+		RoutingID: hash.New("some other routing id").String(),
+		Proof:     pow2,
+	}
+	b, err := json.Marshal(body)
+	assert.NoError(t, err)
+
+	// Get serial
+	req := http.NewRequest("GET", "/", "")
+	res = GetAddressHash(addr.Hash(), req)
+	assert.Equal(t, 200, res.StatusCode)
+	info := getAddressRecord(res)
+
+	sig := addr.Hash().String() + info.RoutingID + strconv.FormatUint(info.Serial, 10)
+	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
+
+	req = http.NewRequest("POST", "/account/"+addr.Hash().String(), string(b))
+	req.Headers.Set("authorization", "BEARER "+authToken)
+	res = PostAddressHash(addr.Hash(), req)
+	assert.Equal(t, "\"updated\"", res.Body)
+	assert.Equal(t, 200, res.StatusCode)
 }
 
 func TestDeleteOrganisationalAddresses(t *testing.T) {
