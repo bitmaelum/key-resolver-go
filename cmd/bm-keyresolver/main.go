@@ -97,7 +97,13 @@ func main() {
 	ServeHttp := flag.Bool("http", false, "Run in HTTP mode")
 	CertPemFile := flag.String("cert", "./resolver.cert.pem", "Cert file in PEM format")
 	KeyPemFile := flag.String("key", "./resolver.key.pem", "Key file in PEM format")
+
+	workBits := flag.Int("bits", 20, "Bits for accounts and organisations")
 	flag.Parse()
+
+	// Set the current bits
+	handler.MinimumProofBitsOrganisation = *workBits
+	handler.MinimumProofBitsAddress = *workBits
 
 	// Make sure we use BOLTDB
 	_ = os.Setenv("USE_BOLT", "1")
