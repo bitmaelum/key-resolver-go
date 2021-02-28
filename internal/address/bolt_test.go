@@ -20,27 +20,31 @@
 package address
 
 import (
+	"fmt"
+	"math/rand"
 	"os"
-
-	"github.com/stretchr/testify/assert"
-
 	"testing"
 )
 
-func TestDynamoRepo(t *testing.T) {
-	_ = os.Setenv("USE_BOLT", "0")
-	_ = os.Setenv("ADDRESS_TABLE_NAME", "mock")
-	SetDefaultRepository(nil)
+const tmpDbPath = "/tmp/mockboltdb-%d.db"
 
-	r := GetResolveRepository()
-	assert.IsType(t, r, NewDynamoDBResolver(nil, ""))
-}
+func TestBoltResolver(t *testing.T) {
+	// Random path, otherwise we get into issues with running on github actions?
+	p := fmt.Sprintf(tmpDbPath, rand.Int63())
 
-func TestBoltResolverRepo(t *testing.T) {
+	fmt.Println("BOLTDB FILE: ", p)
+
 	_ = os.Setenv("USE_BOLT", "1")
-	_ = os.Setenv("BOLT_DB_FILE", "/tmp/mockdb.db")
+	_ = os.Setenv("BOLT_DB_FILE", p)
 	SetDefaultRepository(nil)
 
-	r := GetResolveRepository()
-	assert.IsType(t, r, NewBoltResolver())
+	_ = os.Remove(p)
+	db := NewBoltResolver()
+	runRepositoryCreateUpdateTest(t, db)
+
+	_ = os.Remove(p)
+	db = NewBoltResolver()
+	runRepositoryDeletionTests(t, db)
+
+	_ = os.Remove(p)
 }

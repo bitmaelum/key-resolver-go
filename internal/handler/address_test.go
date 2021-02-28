@@ -356,7 +356,6 @@ func TestAddressSoftDeletion(t *testing.T) {
 	res = SoftDeleteAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 
-
 	// Delete wrong hash with wrong auth
 	req = http.NewRequest("GET", "/", "")
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++wes1RLx7Q1O26cmcvpsAV/7I0e+ISDSzHHW82zuvLw0IaqZ7xngrkz4QdG00VGi3mS6bNSjQqU4Yxrqoiwk/o/jVD0/MHLxYbJHn+taL2sEeSMBvfkc5zHoqsNAgZQ7anvAsYASF30NR3pGvp/66P801sYxJYrIv4b48U2Z3pQZHozDY2e4YUA+14ZWZIYqQ+K8yCa78KTSTy5mDznP2Hpvnsy6sT8R93u2aLk++vLCmRby3REGfYRaWDxSGxgXjCgVqiLdFRLhg==")
@@ -386,7 +385,6 @@ func TestAddressSoftDeletion(t *testing.T) {
 	res = GetAddressHash(addr2.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
-
 	// Soft undelete hash with auth
 	req = http.NewRequest("GET", "/", "")
 	req.Headers.Set("authorization", "BEARER "+authToken)
@@ -399,7 +397,6 @@ func TestAddressSoftDeletion(t *testing.T) {
 	res = GetAddressHash(addr2.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 }
-
 
 func TestAddOrganisationalAddresses(t *testing.T) {
 	setupRepo()

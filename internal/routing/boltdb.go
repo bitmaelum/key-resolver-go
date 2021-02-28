@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/bitmaelum/key-resolver-go/internal"
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 type boltResolver struct {

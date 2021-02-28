@@ -203,7 +203,7 @@ func deleteAddressHashByOrganization(addrHash hash.Hash, organizationInfo *organ
 func SoftDeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 	repo := address.GetResolveRepository()
 	current, err := repo.Get(addrHash.String())
-	if err != nil  {
+	if err != nil {
 		return http.CreateError("error while fetching record", 500)
 	}
 
@@ -226,7 +226,7 @@ func SoftDeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response 
 func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 	repo := address.GetResolveRepository()
 	current, err := repo.Get(addrHash.String())
-	if err != nil  {
+	if err != nil {
 		return http.CreateError("error while fetching record", 500)
 	}
 

@@ -20,6 +20,7 @@
 package address
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -80,7 +81,13 @@ func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 	}
 
 	count, err := res.RowsAffected()
-	return count != 0, err
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return false, errors.New("not updated")
+	}
+	return true, nil
 }
 
 func (r *SqliteDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
@@ -92,7 +99,13 @@ func (r *SqliteDbResolver) Create(hash, routing, publicKey, proof string) (bool,
 	}
 
 	count, err := res.RowsAffected()
-	return count != 0, err
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return false, errors.New("not created")
+	}
+	return true, nil
 }
 
 func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
@@ -129,7 +142,13 @@ func (r *SqliteDbResolver) Delete(hash string) (bool, error) {
 	}
 
 	count, err := res.RowsAffected()
-	return count != 0, err
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return false, errors.New("not deleted")
+	}
+	return true, nil
 }
 
 func (r *SqliteDbResolver) SoftDelete(hash string) (bool, error) {
@@ -145,8 +164,13 @@ func (r *SqliteDbResolver) SoftDelete(hash string) (bool, error) {
 	}
 
 	count, err := res.RowsAffected()
-	return count != 0, err
-
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return false, errors.New("not soft deleted")
+	}
+	return true, nil
 }
 
 func (r *SqliteDbResolver) SoftUndelete(hash string) (bool, error) {
@@ -161,5 +185,11 @@ func (r *SqliteDbResolver) SoftUndelete(hash string) (bool, error) {
 	}
 
 	count, err := res.RowsAffected()
-	return count != 0, err
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return false, errors.New("not soft undeleted")
+	}
+	return true, nil
 }
