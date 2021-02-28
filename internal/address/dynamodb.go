@@ -46,6 +46,8 @@ type Record struct {
 	PublicKey string `dynamodbav:"public_key"`
 	Proof     string `dynamodbav:"proof"`
 	Serial    uint64 `dynamodbav:"sn"`
+	Deleted   bool   `dynamodbav:"deleted"`
+	DeletedAt uint64 `dynamodbav:"deleted_at"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
@@ -132,6 +134,11 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		return nil, ErrNotFound
 	}
 
+	// We would prefer if we didn't retrieve it from the Getitem input
+	if record.Deleted {
+		return nil, ErrNotFound
+	}
+
 	return &ResolveInfoType{
 		Hash:      record.Hash,
 		RoutingID: record.Routing,
@@ -150,6 +157,48 @@ func (r *dynamoDbResolver) Delete(hash string) (bool, error) {
 	})
 
 	// Error while deleting record
+	if err != nil {
+		log.Print(err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *dynamoDbResolver) SoftDelete(hash string) (bool, error) {
+	input := &dynamodb.UpdateItemInput{
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":dt": {N: aws.String(strconv.FormatInt(time.Now().Unix(), 10))},
+		},
+		TableName:        aws.String(r.TableName),
+		UpdateExpression: aws.String("SET deleted=1, deleted_at=:dt"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"hash": {S: aws.String(hash)},
+		},
+	}
+
+	_, err := r.Dyna.UpdateItem(input)
+	if err != nil {
+		log.Print(err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *dynamoDbResolver) SoftUndelete(hash string) (bool, error) {
+	input := &dynamodb.UpdateItemInput{
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":dt": {N: aws.String("")},
+		},
+		TableName:        aws.String(r.TableName),
+		UpdateExpression: aws.String("SET deleted=0, deleted_at=:dt"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"hash": {S: aws.String(hash)},
+		},
+	}
+
+	_, err := r.Dyna.UpdateItem(input)
 	if err != nil {
 		log.Print(err)
 		return false, err

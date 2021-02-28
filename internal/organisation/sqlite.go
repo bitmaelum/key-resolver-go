@@ -38,7 +38,7 @@ type SqliteDbResolver struct {
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
-func NewSqliteResolver(dsn string) *SqliteDbResolver {
+func NewSqliteResolver(dsn string) Repository {
 	if !strings.HasPrefix(dsn, "file:") {
 		if dsn == ":memory:" {
 			dsn = "file::memory:?mode=memory"
@@ -58,7 +58,7 @@ func NewSqliteResolver(dsn string) *SqliteDbResolver {
 		TimeNow: time.Now(),
 	}
 
-	_, _ = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_organisation (hash VARCHAR(64) PRIMARY KEY, proof TEXT, validations TEXT, pubkey TEXT, serial INTEGER)")
+	_, _ = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_organisation (hash VARCHAR(64) PRIMARY KEY, proof TEXT, validations TEXT, pubkey TEXT, serial INTEGER, deleted INTEGER, deleted_at INTEGER)")
 	return db
 }
 
@@ -92,7 +92,7 @@ func (r *SqliteDbResolver) Create(hash, publicKey, proof string, validations []s
 		return false, err
 	}
 
-	res, err := r.conn.Exec("INSERT INTO mock_organisation VALUES (?, ?, ?, ?, ?)", hash, proof, string(b), publicKey, newSerial)
+	res, err := r.conn.Exec("INSERT INTO mock_organisation VALUES (?, ?, ?, ?, ?, 0, 0)", hash, proof, string(b), publicKey, newSerial)
 	if err != nil {
 		return false, err
 	}
@@ -133,6 +133,38 @@ func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 
 func (r *SqliteDbResolver) Delete(hash string) (bool, error) {
 	res, err := r.conn.Exec("DELETE FROM mock_organisation WHERE hash LIKE ?", hash)
+	if err != nil {
+		return false, err
+	}
+
+	count, err := res.RowsAffected()
+	return count != 0, err
+}
+
+func (r *SqliteDbResolver) SoftDelete(hash string) (bool, error) {
+	st, err := r.conn.Prepare("UPDATE mock_organisation SET deleted=1, deleted_at=? WHERE hash=?")
+	if err != nil {
+		return false, err
+	}
+
+	dt := time.Now().Unix()
+	res, err := st.Exec(dt, hash)
+	if err != nil {
+		return false, err
+	}
+
+	count, err := res.RowsAffected()
+	return count != 0, err
+
+}
+
+func (r *SqliteDbResolver) SoftUndelete(hash string) (bool, error) {
+	st, err := r.conn.Prepare("UPDATE mock_organisation SET deleted=0, deleted_at=NULL WHERE hash=?")
+	if err != nil {
+		return false, err
+	}
+
+	res, err := st.Exec(hash)
 	if err != nil {
 		return false, err
 	}

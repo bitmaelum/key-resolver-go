@@ -34,7 +34,6 @@ type boltResolver struct {
 
 // NewBoltResolver returns a new resolver based on BoltDB
 func NewBoltResolver() Repository {
-
 	return &boltResolver{
 		client:     internal.GetBoltDb(),
 		bucketName: "address",
@@ -78,6 +77,8 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 			PubKey:    publicKey,
 			Proof:     proof,
 			Serial:    uint64(time.Now().UnixNano()),
+			Deleted:   false,
+			DeletedAt: time.Time{},
 		}
 		buf, err := json.Marshal(rec)
 		if err != nil {
@@ -96,6 +97,83 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 
 func (b boltResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
 	return b.Create(info.Hash, routing, publicKey, info.Proof)
+}
+
+func (b boltResolver) SoftDelete(hash string) (bool, error) {
+	err := b.client.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(b.bucketName))
+		if bucket == nil {
+			return nil
+		}
+
+		rec, err := getFromBucket(bucket, hash)
+		if err != nil {
+			return ErrNotFound
+		}
+
+		// make record deleted
+		rec.Deleted = true
+		rec.DeletedAt = time.Now()
+
+		// Store
+		buf, err := json.Marshal(rec)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(hash), buf)
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (b boltResolver) SoftUndelete(hash string) (bool, error) {
+	err := b.client.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(b.bucketName))
+		if bucket == nil {
+			return nil
+		}
+
+		rec, err := getFromBucket(bucket, hash)
+		if err != nil {
+			return ErrNotFound
+		}
+
+		// undelete
+		rec.Deleted = false
+		rec.DeletedAt = time.Time{}
+
+		// Store
+		buf, err := json.Marshal(rec)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(hash), buf)
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func getFromBucket(bucket *bolt.Bucket, hash string) (*ResolveInfoType, error) {
+	data := bucket.Get([]byte(hash))
+	if data == nil {
+		return nil, ErrNotFound
+	}
+
+	rec := &ResolveInfoType{}
+	err := json.Unmarshal(data, &rec)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	return rec, nil
 }
 
 func (b boltResolver) Delete(hash string) (bool, error) {

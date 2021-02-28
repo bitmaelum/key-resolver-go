@@ -62,7 +62,7 @@ func GetAddressHash(hash hash.Hash, _ http.Request) *http.Response {
 		return http.CreateError("hash not found", 404)
 	}
 
-	if info == nil {
+	if info == nil || info.Deleted {
 		log.Print(err)
 		return http.CreateError("hash not found", 404)
 	}
@@ -153,7 +153,6 @@ func deleteAddressHashByOwner(addrHash hash.Hash, req http.Request) *http.Respon
 
 	res, err := repo.Delete(current.Hash)
 	if err != nil || !res {
-		log.Print(err)
 		return http.CreateError("error while deleting record", 500)
 	}
 
@@ -199,6 +198,52 @@ func deleteAddressHashByOrganization(addrHash hash.Hash, organizationInfo *organ
 	}
 
 	return http.CreateOutput("ok", 200)
+}
+
+func SoftDeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
+	repo := address.GetResolveRepository()
+	current, err := repo.Get(addrHash.String())
+	if err != nil  {
+		return http.CreateError("error while fetching record", 500)
+	}
+
+	if current == nil || current.Deleted {
+		return http.CreateError("cannot find record", 404)
+	}
+
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
+		return http.CreateError("unauthenticated", 401)
+	}
+
+	res, err := repo.SoftDelete(current.Hash)
+	if err != nil || !res {
+		return http.CreateError("error while deleting record", 500)
+	}
+
+	return http.CreateOutput("", 204)
+}
+
+func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
+	repo := address.GetResolveRepository()
+	current, err := repo.Get(addrHash.String())
+	if err != nil  {
+		return http.CreateError("error while fetching record", 500)
+	}
+
+	if current == nil {
+		return http.CreateError("cannot find record", 404)
+	}
+
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
+		return http.CreateError("unauthenticated", 401)
+	}
+
+	res, err := repo.SoftUndelete(current.Hash)
+	if err != nil || !res {
+		return http.CreateError("error while undeleting record", 500)
+	}
+
+	return http.CreateOutput("", 204)
 }
 
 func updateAddress(uploadBody addressUploadBody, req http.Request, current *address.ResolveInfoType) *http.Response {

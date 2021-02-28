@@ -159,3 +159,11 @@ func validateOrganisationBody(_ organisationUploadBody) bool {
 	// PubKey and proof are already validated through the JSON marshalling
 	return true
 }
+
+func SoftDeleteOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response {
+	return nil
+}
+
+func SoftUndeleteOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response {
+	return nil
+}

@@ -21,6 +21,7 @@ package address
 
 import (
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -33,13 +34,23 @@ type ResolveInfoType struct {
 	PubKey    string
 	Proof     string
 	Serial    uint64
+	Deleted   bool
+	DeletedAt time.Time
 }
 
 // Repository to resolve records
 type Repository interface {
+	// Retrieve from hash
 	Get(hash string) (*ResolveInfoType, error)
+	// Create a new entry
 	Create(hash, routing, publicKey, proof string) (bool, error)
+	// Update an existing entry
 	Update(info *ResolveInfoType, routing, publicKey string) (bool, error)
+	// Softdelete an entry
+	SoftDelete(hash string) (bool, error)
+	// Undelete a softdeleted entry
+	SoftUndelete(hash string) (bool, error)
+	// Remove the entry completely (destructive)
 	Delete(hash string) (bool, error)
 }
 

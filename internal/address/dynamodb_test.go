@@ -120,6 +120,8 @@ func TestCreate(t *testing.T) {
 		"public_key": {S: aws.String("ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=")},
 		"routing":    {S: aws.String("12345678")},
 		"sn":         {N: aws.String("1273494896000000000")},
+		"deleted_at": {N: aws.String("0")},
+		"deleted":    {BOOL: aws.Bool(false)},
 	}
 	mock.ExpectPutItem().ToTable("mock_address_table").WithItems(items).WillReturns(result)
 	ok, err := resolver.Create("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2", "12345678", "ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=", "proof")

@@ -34,6 +34,24 @@ import (
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 )
 
+type HandlerFunc func(hash.Hash, http.Request) *http.Response
+
+var handlerMapping = map[string]HandlerFunc{
+	"GET /address/{hash}":                handler.GetAddressHash,
+	"POST /address/{hash}/delete":        handler.SoftDeleteAddressHash,
+	"POST /address/{hash}/undelete":      handler.SoftUndeleteAddressHash,
+	"DELETE /address/{hash}":             handler.DeleteAddressHash,
+	"POST /address/{hash}":               handler.PostAddressHash,
+	"GET /routing/{hash}":                handler.GetRoutingHash,
+	"DELETE /routing/{hash}":             handler.DeleteRoutingHash,
+	"POST /routing/{hash}":               handler.PostRoutingHash,
+	"GET /organisation/{hash}":           handler.GetOrganisationHash,
+	"POST /organisation/{hash}/delete":   handler.SoftDeleteOrganisationHash,
+	"POST /organisation/{hash}/undelete": handler.SoftUndeleteOrganisationHash,
+	"DELETE /organisation/{hash}":        handler.DeleteOrganisationHash,
+	"POST /organisation/{hash}":          handler.PostOrganisationHash,
+}
+
 // HandleRequest checks the incoming route and calls the correct handler for it
 func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 	if req.RouteKey == "GET /" {
@@ -53,30 +71,10 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	var httpResp *http.Response
 	httpReq := apigateway.ReqToHTTP(&req)
 
-	switch req.RouteKey {
-	// Address endpoints
-	case "GET /address/{hash}":
-		httpResp = handler.GetAddressHash(*h, *httpReq)
-	case "DELETE /address/{hash}":
-		httpResp = handler.DeleteAddressHash(*h, *httpReq)
-	case "POST /address/{hash}":
-		httpResp = handler.PostAddressHash(*h, *httpReq)
-
-	// Routing endpoints
-	case "GET /routing/{hash}":
-		httpResp = handler.GetRoutingHash(*h, *httpReq)
-	case "DELETE /routing/{hash}":
-		httpResp = handler.DeleteRoutingHash(*h, *httpReq)
-	case "POST /routing/{hash}":
-		httpResp = handler.PostRoutingHash(*h, *httpReq)
-
-	// Organisation endpoints
-	case "GET /organisation/{hash}":
-		httpResp = handler.GetOrganisationHash(*h, *httpReq)
-	case "DELETE /organisation/{hash}":
-		httpResp = handler.DeleteOrganisationHash(*h, *httpReq)
-	case "POST /organisation/{hash}":
-		httpResp = handler.PostOrganisationHash(*h, *httpReq)
+	// Check mapping and call correct handler func
+	f, ok := handlerMapping[req.RouteKey]
+	if ok {
+		httpResp = f(*h, *httpReq)
 	}
 
 	if httpResp == nil {
