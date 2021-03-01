@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 )
 
 // ResolveInfoType returns information found in the resolver repository
@@ -43,15 +44,17 @@ type Repository interface {
 	// Retrieve from hash
 	Get(hash string) (*ResolveInfoType, error)
 	// Create a new entry
-	Create(hash, routing, publicKey, proof string) (bool, error)
+	Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error)
 	// Update an existing entry
-	Update(info *ResolveInfoType, routing, publicKey string) (bool, error)
+	Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error)
 	// Softdelete an entry
 	SoftDelete(hash string) (bool, error)
 	// Undelete a softdeleted entry
 	SoftUndelete(hash string) (bool, error)
 	// Remove the entry completely (destructive)
 	Delete(hash string) (bool, error)
+	// Check if this key's fingerprint is available in the history
+	CheckKey(hash string, fingerprint string) (bool, error)
 }
 
 var resolver Repository
@@ -71,7 +74,7 @@ func GetResolveRepository() Repository {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
-	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ADDRESS_TABLE_NAME"))
+	resolver = NewDynamoDBResolver(dynamodb.New(sess), os.Getenv("ADDRESS_TABLE_NAME"), os.Getenv("HISTORY_TABLE_NAME"))
 	return resolver
 }
 

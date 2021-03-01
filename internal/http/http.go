@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+	"github.com/gorilla/mux"
 )
 
 type Headers struct {
@@ -60,14 +61,16 @@ type Request struct {
 	URL     string
 	Body    string
 	Headers Headers
+	Params  map[string]string
 }
 
-func NewRequest(method, url, body string) Request {
+func NewRequest(method, url, body string, params map[string]string) Request {
 	return Request{
 		Method:  method,
 		URL:     url,
 		Body:    body,
 		Headers: NewHeaders(),
+		Params:  params,
 	}
 }
 
@@ -148,10 +151,11 @@ func (r Request) ValidateAuthenticationToken(pubKey, hashData string) bool {
 func NetReqToReq(r http.Request) Request {
 	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return NewRequest("", "", "")
+		return NewRequest("", "", "", nil)
 	}
 
-	req := NewRequest(r.Method, r.URL.String(), string(b))
+	params := mux.Vars(&r)
+	req := NewRequest(r.Method, r.URL.String(), string(b), params)
 
 	// Add headers
 	for k, v := range r.Header {

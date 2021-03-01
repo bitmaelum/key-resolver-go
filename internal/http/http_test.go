@@ -62,27 +62,27 @@ func TestValidateSignature(t *testing.T) {
 	var req Request
 	var hashData = "foobar data test"
 
-	req = NewRequest("GET", "/", "")
+	req = NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "Bearer "+Signature)
 	assert.True(t, req.ValidateAuthenticationToken(PubKeyData, hashData))
 
-	req = NewRequest("GET", "/", "")
+	req = NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "Bearer "+Signature)
 	assert.False(t, req.ValidateAuthenticationToken("false data", hashData))
 
-	req = NewRequest("GET", "/", "")
+	req = NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "Bearer "+Signature)
 	assert.False(t, req.ValidateAuthenticationToken(PubKeyData, hashData+"falsefalse"))
 
-	req = NewRequest("GET", "/", "")
+	req = NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "ADSAFAFAF")
 	assert.False(t, req.ValidateAuthenticationToken(PubKeyData, hashData))
 
-	req = NewRequest("GET", "/", "")
+	req = NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "Bearer *&^(&^%(^&#@%$%)@$%@!$^@$^)@!")
 	assert.False(t, req.ValidateAuthenticationToken(PubKeyData, hashData))
 
-	req = NewRequest("GET", "/", "")
+	req = NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "")
 	assert.False(t, req.ValidateAuthenticationToken(PubKeyData, hashData))
 }

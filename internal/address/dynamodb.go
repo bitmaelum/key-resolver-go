@@ -29,11 +29,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 )
 
 type dynamoDbResolver struct {
-	Dyna      dynamodbiface.DynamoDBAPI
-	TableName string
+	Dyna             dynamodbiface.DynamoDBAPI
+	TableName        string
+	HistoryTableName string
 }
 
 // ErrNotFound will be returned when a record we are looking for is not found in the db
@@ -51,20 +53,21 @@ type Record struct {
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
-func NewDynamoDBResolver(client dynamodbiface.DynamoDBAPI, tableName string) Repository {
+func NewDynamoDBResolver(client dynamodbiface.DynamoDBAPI, tableName, historyTableName string) Repository {
 	return &dynamoDbResolver{
-		Dyna:      client,
-		TableName: tableName,
+		Dyna:             client,
+		TableName:        tableName,
+		HistoryTableName: historyTableName,
 	}
 }
 
-func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
+func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
 	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":s":   {S: aws.String(routing)},
-			":pk":  {S: aws.String(publicKey)},
+			":pk":  {S: aws.String(publicKey.String())},
 			":sn":  {N: aws.String(serial)},
 			":csn": {N: aws.String(strconv.FormatUint(info.Serial, 10))},
 		},
@@ -76,7 +79,14 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 		},
 	}
 
-	_, err := r.Dyna.UpdateItem(input)
+	// Update key history
+	_, err := r.updateKeyHistory(info.Hash, publicKey.Fingerprint())
+	if err != nil {
+		return false, err
+	}
+
+	// Update address record
+	_, err = r.Dyna.UpdateItem(input)
 	if err != nil {
 		log.Print(err)
 		return false, err
@@ -85,11 +95,11 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 	return true, nil
 }
 
-func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
+func (r *dynamoDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
 	record := Record{
 		Hash:      hash,
 		Routing:   routing,
-		PublicKey: publicKey,
+		PublicKey: publicKey.String(),
 		Proof:     proof,
 		Serial:    uint64(TimeNow().UnixNano()),
 	}
@@ -105,6 +115,13 @@ func (r *dynamoDbResolver) Create(hash, routing, publicKey, proof string) (bool,
 		TableName: aws.String(r.TableName),
 	}
 
+	// Update key history
+	_, err = r.updateKeyHistory(hash, publicKey.Fingerprint())
+	if err != nil {
+		return false, err
+	}
+
+	// Create address record
 	_, err = r.Dyna.PutItem(input)
 	return err == nil, err
 }
@@ -205,4 +222,48 @@ func (r *dynamoDbResolver) SoftUndelete(hash string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (r *dynamoDbResolver) CheckKey(hash string, fingerprint string) (bool, error) {
+	result, err := r.Dyna.GetItem(&dynamodb.GetItemInput{
+		TableName: aws.String(r.HistoryTableName),
+		Key: map[string]*dynamodb.AttributeValue{
+			"hash":        {S: aws.String(hash)},
+			"fingerprint": {S: aws.String(fingerprint)},
+		},
+	})
+	// Error while fetching record
+	if err != nil {
+		return false, err
+	}
+
+	// Item not found
+	if result.Item == nil {
+		return false, ErrNotFound
+	}
+
+	return true, nil
+}
+
+func (r *dynamoDbResolver) updateKeyHistory(hash, fingerprint string) (bool, error) {
+	type historyRecord struct {
+		Hash        string `dynamodbav:"hash"`
+		Fingerprint string `dynamodbav:"fingerprint"`
+	}
+
+	av, err := dynamodbattribute.MarshalMap(historyRecord{
+		Hash:        hash,
+		Fingerprint: fingerprint,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item:      av,
+		TableName: aws.String(r.HistoryTableName),
+	}
+
+	_, err = r.Dyna.PutItem(input)
+	return err == nil, err
 }

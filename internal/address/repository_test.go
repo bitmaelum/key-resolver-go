@@ -22,6 +22,9 @@ package address
 import (
 	"os"
 
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
+	testing2 "github.com/bitmaelum/key-resolver-go/internal/testing"
 	"github.com/stretchr/testify/assert"
 
 	"testing"
@@ -33,7 +36,7 @@ func TestDynamoRepo(t *testing.T) {
 	SetDefaultRepository(nil)
 
 	r := GetResolveRepository()
-	assert.IsType(t, r, NewDynamoDBResolver(nil, ""))
+	assert.IsType(t, r, NewDynamoDBResolver(nil, "", ""))
 }
 
 func TestBoltResolverRepo(t *testing.T) {
@@ -43,4 +46,224 @@ func TestBoltResolverRepo(t *testing.T) {
 
 	r := GetResolveRepository()
 	assert.IsType(t, r, NewBoltResolver())
+}
+
+func runRepositoryHistoryCheck(t *testing.T, db Repository) {
+	h1 := hash.Hash("address1!")
+	h2 := hash.Hash("address2!")
+
+	_, pub1, _ := testing2.ReadTestKey("../../testdata/key-1.json")
+	_, pub2, _ := testing2.ReadTestKey("../../testdata/key-2.json")
+	_, pub3, _ := testing2.ReadTestKey("../../testdata/key-3.json")
+	_, pub4, _ := testing2.ReadTestKey("../../testdata/key-4.json")
+
+	ok, err := db.Create(h1.String(), "12345678", pub1, "proof")
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Correct key
+	ok, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Other key
+	ok, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	// Other account
+	ok, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	// update key
+	info, _ := db.Get(h1.String())
+	ok, err = db.Update(info, "12345678", pub2)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Correct key
+	ok, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Other key is correct as well now
+	ok, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Other account still not the key
+	ok, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	// update key on other account
+	ok, err = db.Create(h2.String(), "12345678", pub3, "proof")
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Correct key
+	ok, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Other key is correct as well now
+	ok, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Other account still not the key
+	ok, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	// Other account has other key
+	ok, err = db.CheckKey(h2.String(), pub3.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Update first key again
+	info, _ = db.Get(h1.String())
+	ok, err = db.Update(info, "12345678", pub4)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Correct key
+	ok, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Other key is correct as well now
+	ok, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Pub3 is not here
+	ok, err = db.CheckKey(h1.String(), pub3.Fingerprint())
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	ok, err = db.CheckKey(h1.String(), pub4.Fingerprint())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func runRepositoryCreateUpdateTest(t *testing.T, db Repository) {
+	h1 := hash.Hash("address1!")
+	h2 := hash.Hash("address2!")
+
+	_, pubkey, _ := bmcrypto.GenerateKeyPair("ed25519")
+
+	// Create key
+	ok, err := db.Create(h1.String(), "12345678", pubkey, "proof")
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Fetch unknown hash
+	info, err := db.Get(h2.String())
+	assert.Error(t, err)
+	assert.Nil(t, info)
+
+	// Fetch created hash
+	info, err = db.Get(h1.String())
+	assert.NoError(t, err)
+	assert.Equal(t, "12345678", info.RoutingID)
+	assert.Equal(t, h1.String(), info.Hash)
+	assert.Equal(t, pubkey.String(), info.PubKey)
+	assert.Equal(t, "proof", info.Proof)
+
+	_, pubkey2, _ := bmcrypto.GenerateKeyPair("ed25519")
+
+	// Update info
+	ok, err = db.Update(info, "11112222", pubkey2)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Fetch info
+	info, err = db.Get(h1.String())
+	assert.NoError(t, err)
+	assert.Equal(t, "11112222", info.RoutingID)
+	assert.Equal(t, h1.String(), info.Hash)
+	assert.Equal(t, pubkey2.String(), info.PubKey)
+	assert.Equal(t, "proof", info.Proof)
+
+	_, pubkey3, _ := bmcrypto.GenerateKeyPair("ed25519")
+
+	// Try and update with incorrect serial number
+	info.Serial = 1234
+	ok, err = db.Update(info, "88881111", pubkey3)
+	assert.False(t, ok)
+	assert.Error(t, err)
+
+	// Read back unmodified info
+	info, err = db.Get(h1.String())
+	assert.NoError(t, err)
+	assert.Equal(t, "11112222", info.RoutingID)
+	assert.Equal(t, h1.String(), info.Hash)
+	assert.Equal(t, pubkey2.String(), info.PubKey)
+	assert.Equal(t, "proof", info.Proof)
+}
+
+func runRepositoryDeletionTests(t *testing.T, db Repository) {
+	h1 := hash.Hash("address1!")
+	h2 := hash.Hash("address2!")
+
+	_, pubkey, _ := bmcrypto.GenerateKeyPair("ed25519")
+
+	// Create key
+	ok, err := db.Create(h1.String(), "12345678", pubkey, "proof")
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Fetch created hash
+	info, err := db.Get(h1.String())
+	assert.NoError(t, err)
+	assert.NotNil(t, info)
+
+	// Try and softdelete unknown
+	ok, err = db.SoftDelete(h2.String())
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	// Softdelete known entry
+	ok, err = db.SoftDelete(h1.String())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	info, err = db.Get(h1.String())
+	assert.NoError(t, err)
+	assert.NotNil(t, info)
+
+	// Softdelete again
+	ok, err = db.SoftDelete(h1.String())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Undelete unknown
+	ok, err = db.SoftUndelete(h2.String())
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	// undelete known
+	ok, err = db.SoftUndelete(h1.String())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	info, err = db.Get(h1.String())
+	assert.NoError(t, err)
+	assert.Equal(t, h1.String(), info.Hash)
+
+	// permanently delete known
+	ok, err = db.Delete(h1.String())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// cannot undelete
+	ok, err = db.SoftUndelete(h1.String())
+	assert.Error(t, err)
+	assert.False(t, ok)
+
+	info, err = db.Get(h1.String())
+	assert.Error(t, err)
+	assert.Nil(t, info)
 }

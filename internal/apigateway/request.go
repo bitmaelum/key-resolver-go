@@ -26,10 +26,12 @@ import (
 
 // ReqToHTTP converts a api gateway http request to our internal http request
 func ReqToHTTP(req *events.APIGatewayV2HTTPRequest) *http.Request {
+
 	httpReq := http.NewRequest(
 		req.RequestContext.HTTP.Method,
 		req.RequestContext.HTTP.Path,
 		req.Body,
+		req.PathParameters,
 	)
 
 	// Add headers

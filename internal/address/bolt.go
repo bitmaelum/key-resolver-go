@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/key-resolver-go/internal"
 	bolt "go.etcd.io/bbolt"
 )
@@ -64,7 +65,7 @@ func (b boltResolver) Get(hash string) (*ResolveInfoType, error) {
 	return rec, nil
 }
 
-func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
+func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
 	err := b.client.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(b.bucketName)
 		if err != nil {
@@ -74,7 +75,7 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 		rec := &ResolveInfoType{
 			Hash:      hash,
 			RoutingID: routing,
-			PubKey:    publicKey,
+			PubKey:    publicKey.String(),
 			Proof:     proof,
 			Serial:    uint64(time.Now().UnixNano()),
 			Deleted:   false,
@@ -84,6 +85,9 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 		if err != nil {
 			return err
 		}
+
+		// Store in history (overwrite if already exists)
+		_ = bucket.Put([]byte(hash+publicKey.Fingerprint()), []byte{1})
 
 		return bucket.Put([]byte(hash), buf)
 	})
@@ -95,7 +99,7 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 	return true, nil
 }
 
-func (b boltResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
+func (b boltResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
 	err := b.client.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(b.bucketName)
 		if bucket == nil {
@@ -112,11 +116,14 @@ func (b boltResolver) Update(info *ResolveInfoType, routing, publicKey string) (
 		}
 
 		rec.RoutingID = routing
-		rec.PubKey = publicKey
+		rec.PubKey = publicKey.String()
 		buf, err := json.Marshal(rec)
 		if err != nil {
 			return err
 		}
+
+		// Store in history (overwrite if already exists)
+		_ = bucket.Put([]byte(info.Hash+publicKey.Fingerprint()), []byte{1})
 
 		return bucket.Put([]byte(info.Hash), buf)
 	})
@@ -220,4 +227,27 @@ func (b boltResolver) Delete(hash string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (b boltResolver) CheckKey(hash string, fingerprint string) (bool, error) {
+	err := b.client.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(b.bucketName)
+		if bucket == nil {
+			return ErrNotFound
+		}
+
+		result := bucket.Get([]byte(hash + fingerprint))
+		if result == nil {
+			return ErrNotFound
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+
 }

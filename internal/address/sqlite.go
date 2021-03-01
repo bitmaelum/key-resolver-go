@@ -28,6 +28,7 @@ import (
 
 	"database/sql"
 
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
@@ -64,18 +65,25 @@ func NewSqliteResolver(dsn string) Repository {
 		return nil
 	}
 
+	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_history (hash VARCHAR(64), fingerprint VARCHAR(64), PRIMARY KEY (hash, fingerprint))")
+	if err != nil {
+		return nil
+	}
+
 	return db
 }
 
-func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
+func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
 	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
+
+	r.updateKeyHistory(info.Hash, publicKey.Fingerprint())
 
 	st, err := r.conn.Prepare("UPDATE mock_address SET routing_id=?, pubkey=?, serial=? WHERE hash=? AND serial=?")
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(routing, publicKey, newSerial, info.Hash, info.Serial)
+	res, err := st.Exec(routing, publicKey.String(), newSerial, info.Hash, info.Serial)
 	if err != nil {
 		return false, err
 	}
@@ -90,10 +98,12 @@ func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 	return true, nil
 }
 
-func (r *SqliteDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
+func (r *SqliteDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
 	serial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, 0, 0)", hash, publicKey, routing, proof, serial)
+	r.updateKeyHistory(hash, publicKey.Fingerprint())
+
+	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, 0, 0)", hash, publicKey.String(), routing, proof, serial)
 	if err != nil {
 		return false, err
 	}
@@ -192,4 +202,19 @@ func (r *SqliteDbResolver) SoftUndelete(hash string) (bool, error) {
 		return false, errors.New("not soft undeleted")
 	}
 	return true, nil
+}
+
+func (r *SqliteDbResolver) CheckKey(hash string, fingerprint string) (bool, error) {
+	var b *int
+
+	err := r.conn.QueryRow("SELECT 1 FROM mock_history WHERE hash LIKE ? AND fingerprint LIKE ?", hash, fingerprint).Scan(&b)
+	if err != nil {
+		return false, ErrNotFound
+	}
+
+	return true, nil
+}
+
+func (r *SqliteDbResolver) updateKeyHistory(hash string, fingerprint string) {
+	_, _ = r.conn.Exec("INSERT INTO mock_history VALUES (?, ?)", hash, fingerprint)
 }

@@ -49,13 +49,13 @@ func TestRouting(t *testing.T) {
 	sr.TimeNow = time.Date(2010, 04, 07, 12, 34, 56, 0, time.UTC)
 
 	// Test fetching unknown hash
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res := GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 404, res.StatusCode)
 	assert.JSONEq(t, `{ "error": "hash not found" }`, res.Body)
 
 	// Insert illegal body
-	req = http.NewRequest("GET", "/", "illegal body that should error")
+	req = http.NewRequest("GET", "/", "illegal body that should error", nil)
 	res = PostRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 400, res.StatusCode)
 	assert.JSONEq(t, `{ "error": "invalid data" }`, res.Body)
@@ -67,7 +67,7 @@ func TestRouting(t *testing.T) {
 	assert.Equal(t, `"created"`, res.Body)
 
 	// Test fetching known hash
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 200, res.StatusCode)
 	info := getRoutingRecord(res)
@@ -89,7 +89,7 @@ func TestRoutingUpdate(t *testing.T) {
 	assert.NotNil(t, res)
 
 	// Fetch record
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 200, res.StatusCode)
 	current := getRoutingRecord(res)
@@ -111,7 +111,7 @@ func TestRoutingUpdate(t *testing.T) {
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Update record with correct auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	// req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++wes1RLx7Q1O26cmcvpsAV/7I0e+ISDSzHHW82zuvLw0IaqZ7xngrkz4QdG00VGi3mS6bNSjQqU4Yxrqoiwk/o/jVD0/MHLxYbJHn+taL2sEeSMBvfkc5zHoqsNAgZQ7anvAsYASF30NR3pGvp/66P801sYxJYrIv4b48U2Z3pQZHozDY2e4YUA+14ZWZIYqQ+K8yCa78KTSTy5mDznP2Hpvnsy6sT8R93u2aLk++vLCmRby3REGfYRaWDxSGxgXjCgVqiLdFRLhg==")
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	sr.TimeNow = time.Date(2010, 12, 13, 12, 34, 56, 1241511, time.UTC)
@@ -119,7 +119,7 @@ func TestRoutingUpdate(t *testing.T) {
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t, `"updated"`, res.Body)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 200, res.StatusCode)
 	info := getRoutingRecord(res)
@@ -141,34 +141,34 @@ func TestRoutingDeletion(t *testing.T) {
 	assert.NotNil(t, res)
 
 	// Delete hash without auth
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "Bearer sdfafsadf")
 	res = DeleteRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 401, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 200, res.StatusCode)
 
 	// Delete hash with wrong auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++")
 	res = DeleteRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 401, res.StatusCode)
 
 	// Delete wrong hash with wrong auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++wes1RLx7Q1O26cmcvpsAV/7I0e+ISDSzHHW82zuvLw0IaqZ7xngrkz4QdG00VGi3mS6bNSjQqU4Yxrqoiwk/o/jVD0/MHLxYbJHn+taL2sEeSMBvfkc5zHoqsNAgZQ7anvAsYASF30NR3pGvp/66P801sYxJYrIv4b48U2Z3pQZHozDY2e4YUA+14ZWZIYqQ+K8yCa78KTSTy5mDznP2Hpvnsy6sT8R93u2aLk++vLCmRby3REGfYRaWDxSGxgXjCgVqiLdFRLhg==")
 	res = DeleteRoutingHash("0000000000000000000000000E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 500, res.StatusCode)
 
 	// Delete hash with auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++wes1RLx7Q1O26cmcvpsAV/7I0e+ISDSzHHW82zuvLw0IaqZ7xngrkz4QdG00VGi3mS6bNSjQqU4Yxrqoiwk/o/jVD0/MHLxYbJHn+taL2sEeSMBvfkc5zHoqsNAgZQ7anvAsYASF30NR3pGvp/66P801sYxJYrIv4b48U2Z3pQZHozDY2e4YUA+14ZWZIYqQ+K8yCa78KTSTy5mDznP2Hpvnsy6sT8R93u2aLk++vLCmRby3REGfYRaWDxSGxgXjCgVqiLdFRLhg==")
 	res = DeleteRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 200, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 404, res.StatusCode)
 	res = GetRoutingHash("c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2", req)
@@ -188,7 +188,7 @@ func insertRoutingRecord(routingHash hash.Hash, keyPath string, routing string) 
 	if err != nil {
 		return nil
 	}
-	req := http.NewRequest("GET", "/", string(b))
+	req := http.NewRequest("GET", "/", string(b), nil)
 
 	return PostRoutingHash(routingHash, req)
 }

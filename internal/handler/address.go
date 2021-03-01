@@ -246,13 +246,28 @@ func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Respons
 	return http.CreateOutput("", 204)
 }
 
+func CheckKeyHistory(hash hash.Hash, req http.Request) *http.Response {
+	fp, ok := req.Params["fingerprint"]
+	if !ok {
+		return http.CreateError("not found", 404)
+	}
+
+	repo := address.GetResolveRepository()
+	ok, err := repo.CheckKey(hash.String(), fp)
+	if err != nil || !ok {
+		return http.CreateError("not found", 404)
+	}
+
+	return http.CreateOutput("", 204)
+}
+
 func updateAddress(uploadBody addressUploadBody, req http.Request, current *address.ResolveInfoType) *http.Response {
 	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 
 	repo := address.GetResolveRepository()
-	res, err := repo.Update(current, uploadBody.RoutingID, uploadBody.PublicKey.String())
+	res, err := repo.Update(current, uploadBody.RoutingID, uploadBody.PublicKey)
 
 	if err != nil || !res {
 		log.Print(err)
@@ -274,7 +289,7 @@ func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Respo
 	}
 
 	repo := address.GetResolveRepository()
-	res, err := repo.Create(addrHash.String(), uploadBody.RoutingID, uploadBody.PublicKey.String(), uploadBody.Proof.String())
+	res, err := repo.Create(addrHash.String(), uploadBody.RoutingID, uploadBody.PublicKey, uploadBody.Proof.String())
 	if err != nil || !res {
 		log.Print(err)
 		return http.CreateError("error while creating: ", 500)
