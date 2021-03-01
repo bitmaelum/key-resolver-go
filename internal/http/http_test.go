@@ -25,11 +25,11 @@ import (
 	"os"
 	"testing"
 
+	testing2 "github.com/bitmaelum/key-resolver-go/internal/testing"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	// PrivKeyData string = "rsa MIICXQIBAAKBgQC57qC/BeoYcM6ijazuaCdJkbT8pvPpFEDVzf9ZQ9axswXU3mywSOaR3wflriSjmvRfUNs/BAjshgtJqgviUXx7lE5aG9mcUyvomyFFpfCR2l2Lvow0H8y7JoL6yxMSQf8gpAcaQzPB8dsfGe+DqA+5wjxXPOhC1QUcllt08yBB3wIDAQABAoGBAKSWDKsrtB5wdSnFmcfsYKKqHXjs3Mp9CCt6z0eYWoswesAFKFcgISINOLNi5MICX8GkFIACtVeSDJnnsd9j3HkRD7kwxmvVVXltaIrbrEunKgdRK1ACk2Bkb7UUDImDjiZztJvCSL+WLu9Fphn8IfPzwAIPWAKKBoD1kuI6yfFBAkEA6dJpoTMKDlCEMeJWZVUnhL7K/OBphWLO7cZfaxowBeGGXuMBWiaySsdeIDV7S/PDnoHBKwIkSsSfjzWYptuq4QJBAMuRXwoqZHKPHjMTCyz3C7nwFCzgmmKM5PReZU0s4/tdFu/VGOSnVDSzC5JFcY48Cs03TBwZ2wPhv/3r4a7YRL8CQQCxedRTVro7Q0IT2whYwdnNGERazLtLU0RdlkS2tpnc3OFxBDzygIyz1b/MEswTSmMg3LwSOP3zAmtZ+AR2IiYBAkBENgnqlhniaSJtaswr3PwI6fFYuEoDC8MMPzUijxA1ghPVeUpGE+ubXQNbl/lc97GG4iiWofNJcbOrmgadV8pxAkBhsn2T9DSoDdeImRecxs3/Xej4EYQpj/3X436RrFntjT06wD6wF9s5CvPmz/ftUBJ71IVlBQUd3jOgQPRzEhNC"
 	PubKeyData string = "rsa MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC57qC/BeoYcM6ijazuaCdJkbT8pvPpFEDVzf9ZQ9axswXU3mywSOaR3wflriSjmvRfUNs/BAjshgtJqgviUXx7lE5aG9mcUyvomyFFpfCR2l2Lvow0H8y7JoL6yxMSQf8gpAcaQzPB8dsfGe+DqA+5wjxXPOhC1QUcllt08yBB3wIDAQAB"
 	Signature  string = "lsOsGOrY0rrs4A2CaJ3FzKLU5jx41d/Dw7gxQLUDPC4KMq6Cd3hyjZN6B8BbCDHBcZCFSd+sKvUbmM+ZCM1D6OrqYGvoRLTZJjWqbUsHRS7PkmIUWToxWxe0qo+tq5K/aYoDPJ+o6fRYTnUGILkN5+pQ8NquJqviLPCvBJVpKCo="
 )
@@ -90,4 +90,11 @@ func TestValidateSignature(t *testing.T) {
 func TestMain(m *testing.M) {
 	log.SetOutput(ioutil.Discard)
 	os.Exit(m.Run())
+}
+
+func TestGenerateAuthenticationToken(t *testing.T) {
+	priv, _, _ := testing2.ReadTestKey("../../testdata/key-1.json")
+
+	token := GenerateAuthenticationToken([]byte("secret"), *priv)
+	assert.Equal(t, "RHurMX2K6xiBrfYuyWufGegfrTArrn9Nm/MJaCswwqEpV3HTaQaeEEcQefM5RyzQoF4UIbPvHxRrbjL8u9Nns8GvpZ/ACdDN3MXOX0zVjkydX4Iit0k32PfikzX1kFvM0B7Lak7iNUoq0KMacBJ6ri+v+SCSSwvukB5dO5y4zdIOU1Dfypel62gc58+FWyIDcoVQEjb+hpAs1CVd5wNMR4iMe6sovp2JQ4FMVd0LEJLDOcfGHtv0kg+jikSt+QmR5YuKwIfjxZHA/dPkyL6bMmwizap4CfF/qBbiGADxkPQIxmPxuZ7mSPrtukIJu1DHayhbcp19ikfKvG8fBziLMg==", token)
 }
