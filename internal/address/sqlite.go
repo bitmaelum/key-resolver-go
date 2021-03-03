@@ -65,7 +65,7 @@ func NewSqliteResolver(dsn string) Repository {
 		return nil
 	}
 
-	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_history (hash VARCHAR(64), fingerprint VARCHAR(64), PRIMARY KEY (hash, fingerprint))")
+	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_history (hash VARCHAR(64), fingerprint VARCHAR(64), status INTEGER, PRIMARY KEY (hash, fingerprint))")
 	if err != nil {
 		return nil
 	}
@@ -76,7 +76,7 @@ func NewSqliteResolver(dsn string) Repository {
 func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
 	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	r.updateKeyHistory(info.Hash, publicKey.Fingerprint())
+	_ = r.updateKeyHistory(info.Hash, publicKey.Fingerprint(), KSNormal)
 
 	st, err := r.conn.Prepare("UPDATE mock_address SET routing_id=?, pubkey=?, serial=? WHERE hash=? AND serial=?")
 	if err != nil {
@@ -101,7 +101,7 @@ func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing string, publicK
 func (r *SqliteDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
 	serial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	r.updateKeyHistory(hash, publicKey.Fingerprint())
+	_ = r.updateKeyHistory(hash, publicKey.Fingerprint(), KSNormal)
 
 	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, 0, 0)", hash, publicKey.String(), routing, proof, serial)
 	if err != nil {
@@ -204,17 +204,23 @@ func (r *SqliteDbResolver) SoftUndelete(hash string) (bool, error) {
 	return true, nil
 }
 
-func (r *SqliteDbResolver) CheckKey(hash string, fingerprint string) (bool, error) {
-	var b *int
+func (r *SqliteDbResolver) CheckKey(hash string, fingerprint string) (KeyStatus, error) {
+	var ks *KeyStatus
 
-	err := r.conn.QueryRow("SELECT 1 FROM mock_history WHERE hash LIKE ? AND fingerprint LIKE ?", hash, fingerprint).Scan(&b)
+	err := r.conn.QueryRow("SELECT status FROM mock_history WHERE hash LIKE ? AND fingerprint LIKE ?", hash, fingerprint).Scan(&ks)
 	if err != nil {
-		return false, ErrNotFound
+		return KSNormal, ErrNotFound
 	}
 
-	return true, nil
+	return *ks, nil
 }
 
-func (r *SqliteDbResolver) updateKeyHistory(hash string, fingerprint string) {
-	_, _ = r.conn.Exec("INSERT INTO mock_history VALUES (?, ?)", hash, fingerprint)
+func (r *SqliteDbResolver) updateKeyHistory(hash string, fingerprint string, status KeyStatus) error {
+	_, err := r.conn.Exec("INSERT OR REPLACE INTO mock_history VALUES (?, ?, ?)", hash, fingerprint, status)
+
+	return err
+}
+
+func (r *SqliteDbResolver) SetKeyStatus(hash string, fingerprint string, status KeyStatus) error {
+	return r.updateKeyHistory(hash, fingerprint, status)
 }

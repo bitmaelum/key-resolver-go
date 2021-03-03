@@ -49,4 +49,8 @@ func TestBoltResolver(t *testing.T) {
 	runRepositoryHistoryCheck(t, db)
 
 	_ = os.Remove(p)
+	db = NewBoltResolver()
+	runRepositoryHistoryKeyStatus(t, db)
+
+	_ = os.Remove(p)
 }

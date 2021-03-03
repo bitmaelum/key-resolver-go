@@ -62,19 +62,17 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key
-	ok, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err := db.CheckKey(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
-	assert.True(t, ok)
+	assert.Equal(t, KSNormal, res)
 
 	// Other key
-	ok, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
 	assert.Error(t, err)
-	assert.False(t, ok)
 
 	// Other account
-	ok, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	res, err = db.CheckKey(h2.String(), pub1.Fingerprint())
 	assert.Error(t, err)
-	assert.False(t, ok)
 
 	// update key
 	info, _ := db.Get(h1.String())
@@ -83,19 +81,18 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key
-	ok, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err = db.CheckKey(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
-	assert.True(t, ok)
+	assert.Equal(t, KSNormal, res)
 
 	// Other key is correct as well now
-	ok, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
 	assert.NoError(t, err)
-	assert.True(t, ok)
+	assert.Equal(t, KSNormal, res)
 
 	// Other account still not the key
-	ok, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	res, err = db.CheckKey(h2.String(), pub1.Fingerprint())
 	assert.Error(t, err)
-	assert.False(t, ok)
 
 	// update key on other account
 	ok, err = db.Create(h2.String(), "12345678", pub3, "proof")
@@ -103,24 +100,23 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key
-	ok, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err = db.CheckKey(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
-	assert.True(t, ok)
+	assert.Equal(t, KSNormal, res)
 
 	// Other key is correct as well now
-	ok, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
 	assert.NoError(t, err)
-	assert.True(t, ok)
+	assert.Equal(t, KSNormal, res)
 
 	// Other account still not the key
-	ok, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	_, err = db.CheckKey(h2.String(), pub1.Fingerprint())
 	assert.Error(t, err)
-	assert.False(t, ok)
 
 	// Other account has other key
-	ok, err = db.CheckKey(h2.String(), pub3.Fingerprint())
+	res, err = db.CheckKey(h2.String(), pub3.Fingerprint())
 	assert.NoError(t, err)
-	assert.True(t, ok)
+	assert.Equal(t, KSNormal, res)
 
 	// Update first key again
 	info, _ = db.Get(h1.String())
@@ -129,23 +125,61 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key
-	ok, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err = db.CheckKey(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
-	assert.True(t, ok)
+	assert.Equal(t, KSNormal, res)
 
 	// Other key is correct as well now
-	ok, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
 	assert.NoError(t, err)
-	assert.True(t, ok)
+	assert.Equal(t, KSNormal, res)
 
 	// Pub3 is not here
-	ok, err = db.CheckKey(h1.String(), pub3.Fingerprint())
+	_, err = db.CheckKey(h1.String(), pub3.Fingerprint())
 	assert.Error(t, err)
-	assert.False(t, ok)
 
-	ok, err = db.CheckKey(h1.String(), pub4.Fingerprint())
+	res, err = db.CheckKey(h1.String(), pub4.Fingerprint())
+	assert.NoError(t, err)
+	assert.Equal(t, KSNormal, res)
+}
+
+func runRepositoryHistoryKeyStatus(t *testing.T, db Repository) {
+	h1 := hash.Hash("address1!")
+
+	_, pub1, _ := testing2.ReadTestKey("../../testdata/key-1.json")
+	_, pub2, _ := testing2.ReadTestKey("../../testdata/key-2.json")
+
+	ok, err := db.Create(h1.String(), "12345678", pub1, "proof")
 	assert.NoError(t, err)
 	assert.True(t, ok)
+
+	// Correct key in normal state
+	res, err := db.CheckKey(h1.String(), pub1.Fingerprint())
+	assert.NoError(t, err)
+	assert.Equal(t, KSNormal, res)
+
+	// Rotate key
+	info, _ := db.Get(h1.String())
+	ok, err = db.Update(info, "12345678", pub2)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+
+	// Set compromised key status of key 1
+	err = db.SetKeyStatus(h1.String(), pub1.Fingerprint(), KSCompromised)
+	assert.NoError(t, err)
+
+	// First key is compromised
+	res, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	assert.NoError(t, err)
+	assert.Equal(t, KSCompromised, res)
+
+	// Second key is normal
+	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	assert.NoError(t, err)
+	assert.Equal(t, KSNormal, res)
+
+
 }
 
 func runRepositoryCreateUpdateTest(t *testing.T, db Repository) {

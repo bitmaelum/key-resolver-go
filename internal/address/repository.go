@@ -39,6 +39,13 @@ type ResolveInfoType struct {
 	DeletedAt time.Time
 }
 
+type KeyStatus int
+
+const (
+	KSNormal KeyStatus = iota       // Regular key, just rotated
+	KSCompromised                   // Key was compromised
+)
+
 // Repository to resolve records
 type Repository interface {
 	// Retrieve from hash
@@ -53,8 +60,11 @@ type Repository interface {
 	SoftUndelete(hash string) (bool, error)
 	// Remove the entry completely (destructive)
 	Delete(hash string) (bool, error)
+
 	// Check if this key's fingerprint is available in the history
-	CheckKey(hash string, fingerprint string) (bool, error)
+	CheckKey(hash string, fingerprint string) (KeyStatus, error)
+	// Set the given key status
+	SetKeyStatus(hash string, fingerprint string, status KeyStatus) error
 }
 
 var resolver Repository

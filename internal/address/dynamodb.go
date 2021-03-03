@@ -38,6 +38,10 @@ type dynamoDbResolver struct {
 	HistoryTableName string
 }
 
+func (r *dynamoDbResolver) SetKeyStatus(hash string, fingerprint string, status KeyStatus) error {
+	panic("implement me")
+}
+
 // ErrNotFound will be returned when a record we are looking for is not found in the db
 var ErrNotFound = errors.New("record not found")
 
@@ -224,7 +228,7 @@ func (r *dynamoDbResolver) SoftUndelete(hash string) (bool, error) {
 	return true, nil
 }
 
-func (r *dynamoDbResolver) CheckKey(hash string, fingerprint string) (bool, error) {
+func (r *dynamoDbResolver) CheckKey(hash string, fingerprint string) (KeyStatus, error) {
 	result, err := r.Dyna.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(r.HistoryTableName),
 		Key: map[string]*dynamodb.AttributeValue{
@@ -234,15 +238,15 @@ func (r *dynamoDbResolver) CheckKey(hash string, fingerprint string) (bool, erro
 	})
 	// Error while fetching record
 	if err != nil {
-		return false, err
+		return KSNormal, err
 	}
 
 	// Item not found
 	if result.Item == nil {
-		return false, ErrNotFound
+		return KSNormal, ErrNotFound
 	}
 
-	return true, nil
+	return KSNormal, nil
 }
 
 func (r *dynamoDbResolver) updateKeyHistory(hash, fingerprint string) (bool, error) {

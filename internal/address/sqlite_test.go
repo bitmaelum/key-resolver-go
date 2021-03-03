@@ -32,4 +32,7 @@ func TestSqliteDbResolver(t *testing.T) {
 
 	db = NewSqliteResolver(":memory:")
 	runRepositoryHistoryCheck(t, db)
+
+	db = NewSqliteResolver(":memory:")
+	runRepositoryHistoryKeyStatus(t, db)
 }
