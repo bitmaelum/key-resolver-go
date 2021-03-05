@@ -7,6 +7,7 @@
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/bitmaelum/key-resolver-go)         
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=bitmaelum_bitmaelum-suite&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=bitmaelum_bitmaelum-suite)
 
+
 <hr>
 
 # Key resolver
