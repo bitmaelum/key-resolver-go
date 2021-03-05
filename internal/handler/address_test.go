@@ -646,6 +646,72 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	assert.Equal(t, 200, res.StatusCode)
 }
 
+func TestHistory(t *testing.T) {
+	setupRepo()
+
+	addr, _ := pkgAddress.NewAddress("example!")
+	addr2, _ := pkgAddress.NewAddress("someoneelse!")
+	pow := proofofwork.New(22, addr.Hash().String(), 1540921)
+
+	_, pub, _ := testing2.ReadTestKey("../../testdata/key-4.json")
+	_, pub2, _ := testing2.ReadTestKey("../../testdata/key-3.json")
+
+	// Insert new hash
+	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow)
+	assert.NotNil(t, res)
+	assert.Equal(t, 201, res.StatusCode)
+	assert.Equal(t, `"created"`, res.Body)
+
+	// Test history of key
+	req := http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = GetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 204, res.StatusCode)
+
+	// Check history of non-existing key
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub2.Fingerprint(), "", map[string]string{
+		"fingerprint": pub2.Fingerprint(),
+	})
+	res = GetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 404, res.StatusCode)
+
+	// Check history of existing key on different account
+	req = http.NewRequest("GET", "/address/"+addr2.Hash().String()+"/check/"+pub.Fingerprint(), "", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = GetKeyStatus(addr2.Hash(), req)
+	assert.Equal(t, 404, res.StatusCode)
+
+	// Set key to unknown status
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "{\"status\":\"unknown\"}", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = SetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 400, res.StatusCode)
+
+	// Set key to compromised
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "{\"status\":\"compromised\"}", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = SetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 200, res.StatusCode)
+
+	// Check history of key again
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = GetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 410, res.StatusCode)
+
+	// Set key to normal
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "{\"status\":\"normal\"}", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = SetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 200, res.StatusCode)
+}
+
 func setupRepo() {
 	sr := address.NewSqliteResolver(":memory:")
 	address.SetDefaultRepository(sr)

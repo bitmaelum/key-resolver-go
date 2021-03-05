@@ -20,6 +20,7 @@
 package address
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
+	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	dynamock "github.com/gusaul/go-dynamock"
 	"github.com/stretchr/testify/assert"
 )
@@ -116,6 +118,7 @@ func TestCreate(t *testing.T) {
 	historyItems := map[string]*dynamodb.AttributeValue{
 		"hash":        {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
 		"fingerprint": {S: aws.String("b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758")},
+		"status":      {N: aws.String(fmt.Sprintf("%d", KSNormal))},
 	}
 	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(historyItems).WillReturns(dynamodb.PutItemOutput{})
 
@@ -153,6 +156,7 @@ func TestUpdate(t *testing.T) {
 	expectedItems := map[string]*dynamodb.AttributeValue{
 		"hash":        {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
 		"fingerprint": {S: aws.String(pubkey.Fingerprint())},
+		"status":      {N: aws.String(fmt.Sprintf("%d", KSNormal))},
 	}
 	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(expectedItems)
 
@@ -166,6 +170,56 @@ func TestUpdate(t *testing.T) {
 	ok, err := resolver.Update(info, "555555555", pubkey)
 	assert.NoError(t, err)
 	assert.True(t, ok)
+}
+
+func TestHistory(t *testing.T) {
+	var client dynamodbiface.DynamoDBAPI
+	client, mock = dynamock.New()
+	resolver := NewDynamoDBResolver(client, "mock_address_table", "mock_history_table")
+
+	addrHash := hash.Hash("addr1")
+
+	_, pub1, _ := bmcrypto.GenerateKeyPair(bmcrypto.KeyTypeED25519)
+
+	// Cannot set key status when it doesn't exist yet
+	err := resolver.SetKeyStatus(addrHash.String(), pub1.Fingerprint(), KSNormal)
+	assert.Error(t, err)
+
+	// Set first key to normal
+
+	expectedItems := map[string]*dynamodb.AttributeValue{
+		"hash":        {S: aws.String(addrHash.String())},
+		"fingerprint": {S: aws.String(pub1.Fingerprint())},
+		"status":      {N: aws.String(fmt.Sprintf("%d", KSNormal))},
+	}
+	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(expectedItems)
+
+	result := dynamodb.GetItemOutput{
+		Item: map[string]*dynamodb.AttributeValue{
+			"hash":        {S: aws.String(addrHash.String())},
+			"fingerprint": {S: aws.String(pub1.Fingerprint())},
+			"status":      {N: aws.String("1")},
+		},
+	}
+	mock.ExpectGetItem().ToTable("mock_history_table").WillReturns(result)
+
+	err = resolver.SetKeyStatus(addrHash.String(), pub1.Fingerprint(), KSNormal)
+	assert.NoError(t, err)
+
+	// Set second key to compromised
+	_, pub2, _ := bmcrypto.GenerateKeyPair(bmcrypto.KeyTypeED25519)
+
+	expectedItems = map[string]*dynamodb.AttributeValue{
+		"hash":        {S: aws.String(addrHash.String())},
+		"fingerprint": {S: aws.String(pub2.Fingerprint())},
+		"status":      {N: aws.String(fmt.Sprintf("%d", KSCompromised))},
+	}
+	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(expectedItems)
+
+	mock.ExpectGetItem().ToTable("mock_history_table").WillReturns(result)
+
+	err = resolver.SetKeyStatus(addrHash.String(), pub2.Fingerprint(), KSCompromised)
+	assert.NoError(t, err)
 }
 
 func TestResolver(t *testing.T) {

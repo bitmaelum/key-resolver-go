@@ -38,15 +38,14 @@ type dynamoDbResolver struct {
 	HistoryTableName string
 }
 
-func (r *dynamoDbResolver) SetKeyStatus(hash string, fingerprint string, status KeyStatus) error {
-	panic("implement me")
-}
+// Error codes
+var (
+	ErrNotFound     = errors.New("record not found")
+	ErrCannotUpdate = errors.New("cannot update record")
+)
 
-// ErrNotFound will be returned when a record we are looking for is not found in the db
-var ErrNotFound = errors.New("record not found")
-
-// Record holds a DynamoDB record
-type Record struct {
+// record holds a DynamoDB record
+type recordType struct {
 	Hash      string `dynamodbav:"hash"`
 	Routing   string `dynamodbav:"routing"`
 	PublicKey string `dynamodbav:"public_key"`
@@ -54,6 +53,12 @@ type Record struct {
 	Serial    uint64 `dynamodbav:"sn"`
 	Deleted   bool   `dynamodbav:"deleted"`
 	DeletedAt uint64 `dynamodbav:"deleted_at"`
+}
+
+type historyRecordType struct {
+	Hash        string    `dynamodbav:"hash"`
+	Fingerprint string    `dynamodbav:"fingerprint"`
+	Status      KeyStatus `dynamodbav:"status"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
@@ -84,7 +89,7 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing string, publicK
 	}
 
 	// Update key history
-	_, err := r.updateKeyHistory(info.Hash, publicKey.Fingerprint())
+	_, err := r.updateKeyHistory(info.Hash, publicKey.Fingerprint(), KSNormal)
 	if err != nil {
 		return false, err
 	}
@@ -100,7 +105,7 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing string, publicK
 }
 
 func (r *dynamoDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
-	record := Record{
+	record := recordType{
 		Hash:      hash,
 		Routing:   routing,
 		PublicKey: publicKey.String(),
@@ -120,7 +125,7 @@ func (r *dynamoDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubK
 	}
 
 	// Update key history
-	_, err = r.updateKeyHistory(hash, publicKey.Fingerprint())
+	_, err = r.updateKeyHistory(hash, publicKey.Fingerprint(), KSNormal)
 	if err != nil {
 		return false, err
 	}
@@ -148,7 +153,7 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		return nil, ErrNotFound
 	}
 
-	record := Record{}
+	record := recordType{}
 	err = dynamodbattribute.UnmarshalMap(result.Item, &record)
 	if err != nil {
 		log.Print(err)
@@ -228,7 +233,7 @@ func (r *dynamoDbResolver) SoftUndelete(hash string) (bool, error) {
 	return true, nil
 }
 
-func (r *dynamoDbResolver) CheckKey(hash string, fingerprint string) (KeyStatus, error) {
+func (r *dynamoDbResolver) GetKeyStatus(hash string, fingerprint string) (KeyStatus, error) {
 	result, err := r.Dyna.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(r.HistoryTableName),
 		Key: map[string]*dynamodb.AttributeValue{
@@ -246,18 +251,40 @@ func (r *dynamoDbResolver) CheckKey(hash string, fingerprint string) (KeyStatus,
 		return KSNormal, ErrNotFound
 	}
 
-	return KSNormal, nil
-}
-
-func (r *dynamoDbResolver) updateKeyHistory(hash, fingerprint string) (bool, error) {
-	type historyRecord struct {
-		Hash        string `dynamodbav:"hash"`
-		Fingerprint string `dynamodbav:"fingerprint"`
+	record := historyRecordType{}
+	err = dynamodbattribute.UnmarshalMap(result.Item, &record)
+	if err != nil {
+		log.Print(err)
+		return KSNormal, ErrNotFound
 	}
 
-	av, err := dynamodbattribute.MarshalMap(historyRecord{
+	return record.Status, nil
+}
+
+func (r *dynamoDbResolver) SetKeyStatus(hash string, fingerprint string, status KeyStatus) error {
+	// Make sure key exists before updating
+	_, err := r.GetKeyStatus(hash, fingerprint)
+	if err != nil {
+		return err
+	}
+
+	ok, err := r.updateKeyHistory(hash, fingerprint, status)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return ErrCannotUpdate
+	}
+
+	return nil
+}
+
+func (r *dynamoDbResolver) updateKeyHistory(hash, fingerprint string, status KeyStatus) (bool, error) {
+	av, err := dynamodbattribute.MarshalMap(historyRecordType{
 		Hash:        hash,
 		Fingerprint: fingerprint,
+		Status:      status,
 	})
 	if err != nil {
 		return false, err

@@ -117,7 +117,8 @@ func main() {
 	router.HandleFunc("/address/{hash}", requestWrapper(handler.DeleteAddressHash)).Methods("DELETE")
 	router.HandleFunc("/address/{hash}", requestWrapper(handler.PostAddressHash)).Methods("POST")
 
-	router.HandleFunc("/address/{hash}/check/{fingerprint}", requestWrapper(handler.CheckKeyHistory)).Methods("POST")
+	router.HandleFunc("/address/{hash}/status/{fingerprint}", requestWrapper(handler.GetKeyStatus)).Methods("GET")
+	router.HandleFunc("/address/{hash}/status/{fingerprint}", requestWrapper(handler.SetKeyStatus)).Methods("POST")
 
 	router.HandleFunc("/routing/{hash}", requestWrapper(handler.GetRoutingHash)).Methods("GET")
 	router.HandleFunc("/routing/{hash}", requestWrapper(handler.DeleteRoutingHash)).Methods("DELETE")

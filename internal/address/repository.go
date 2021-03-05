@@ -20,6 +20,7 @@
 package address
 
 import (
+	"errors"
 	"os"
 	"time"
 
@@ -42,9 +43,28 @@ type ResolveInfoType struct {
 type KeyStatus int
 
 const (
-	KSNormal KeyStatus = iota       // Regular key, just rotated
-	KSCompromised                   // Key was compromised
+	KSNormal      KeyStatus = iota + 1 // Regular key, just rotated
+	KSCompromised                      // Key was compromised
 )
+
+var keyStatusMap = map[KeyStatus]string{
+	KSNormal:      "normal",
+	KSCompromised: "compromised",
+}
+
+func (k KeyStatus) ToString() string {
+	return keyStatusMap[k]
+}
+
+func StringToKeyStatus(s string) (KeyStatus, error) {
+	for i := range keyStatusMap {
+		if keyStatusMap[i] == s {
+			return i, nil
+		}
+	}
+
+	return 0, errors.New("keystatus not found")
+}
 
 // Repository to resolve records
 type Repository interface {
@@ -61,8 +81,8 @@ type Repository interface {
 	// Remove the entry completely (destructive)
 	Delete(hash string) (bool, error)
 
-	// Check if this key's fingerprint is available in the history
-	CheckKey(hash string, fingerprint string) (KeyStatus, error)
+	// Get the status of this (old) key
+	GetKeyStatus(hash string, fingerprint string) (KeyStatus, error)
 	// Set the given key status
 	SetKeyStatus(hash string, fingerprint string, status KeyStatus) error
 }

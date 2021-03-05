@@ -62,16 +62,16 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key
-	res, err := db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err := db.GetKeyStatus(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
 	// Other key
-	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	_, err = db.GetKeyStatus(h1.String(), pub2.Fingerprint())
 	assert.Error(t, err)
 
 	// Other account
-	res, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	_, err = db.GetKeyStatus(h2.String(), pub1.Fingerprint())
 	assert.Error(t, err)
 
 	// update key
@@ -81,17 +81,17 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key
-	res, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
 	// Other key is correct as well now
-	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub2.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
 	// Other account still not the key
-	res, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	_, err = db.GetKeyStatus(h2.String(), pub1.Fingerprint())
 	assert.Error(t, err)
 
 	// update key on other account
@@ -100,21 +100,21 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key
-	res, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
 	// Other key is correct as well now
-	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub2.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
 	// Other account still not the key
-	_, err = db.CheckKey(h2.String(), pub1.Fingerprint())
+	_, err = db.GetKeyStatus(h2.String(), pub1.Fingerprint())
 	assert.Error(t, err)
 
 	// Other account has other key
-	res, err = db.CheckKey(h2.String(), pub3.Fingerprint())
+	res, err = db.GetKeyStatus(h2.String(), pub3.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
@@ -125,20 +125,20 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key
-	res, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
 	// Other key is correct as well now
-	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub2.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
 	// Pub3 is not here
-	_, err = db.CheckKey(h1.String(), pub3.Fingerprint())
+	_, err = db.GetKeyStatus(h1.String(), pub3.Fingerprint())
 	assert.Error(t, err)
 
-	res, err = db.CheckKey(h1.String(), pub4.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub4.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 }
@@ -154,7 +154,7 @@ func runRepositoryHistoryKeyStatus(t *testing.T, db Repository) {
 	assert.True(t, ok)
 
 	// Correct key in normal state
-	res, err := db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err := db.GetKeyStatus(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
 
@@ -164,21 +164,19 @@ func runRepositoryHistoryKeyStatus(t *testing.T, db Repository) {
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-
 	// Set compromised key status of key 1
 	err = db.SetKeyStatus(h1.String(), pub1.Fingerprint(), KSCompromised)
 	assert.NoError(t, err)
 
 	// First key is compromised
-	res, err = db.CheckKey(h1.String(), pub1.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub1.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSCompromised, res)
 
 	// Second key is normal
-	res, err = db.CheckKey(h1.String(), pub2.Fingerprint())
+	res, err = db.GetKeyStatus(h1.String(), pub2.Fingerprint())
 	assert.NoError(t, err)
 	assert.Equal(t, KSNormal, res)
-
 
 }
 

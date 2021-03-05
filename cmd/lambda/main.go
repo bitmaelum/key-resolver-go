@@ -37,20 +37,21 @@ import (
 type HandlerFunc func(hash.Hash, http.Request) *http.Response
 
 var handlerMapping = map[string]HandlerFunc{
-	"GET /address/{hash}":                      handler.GetAddressHash,
-	"POST /address/{hash}/delete":              handler.SoftDeleteAddressHash,
-	"POST /address/{hash}/undelete":            handler.SoftUndeleteAddressHash,
-	"POST /address/{hash}/check/{fingerprint}": handler.CheckKeyHistory,
-	"DELETE /address/{hash}":                   handler.DeleteAddressHash,
-	"POST /address/{hash}":                     handler.PostAddressHash,
-	"GET /routing/{hash}":                      handler.GetRoutingHash,
-	"DELETE /routing/{hash}":                   handler.DeleteRoutingHash,
-	"POST /routing/{hash}":                     handler.PostRoutingHash,
-	"GET /organisation/{hash}":                 handler.GetOrganisationHash,
-	"POST /organisation/{hash}/delete":         handler.SoftDeleteOrganisationHash,
-	"POST /organisation/{hash}/undelete":       handler.SoftUndeleteOrganisationHash,
-	"DELETE /organisation/{hash}":              handler.DeleteOrganisationHash,
-	"POST /organisation/{hash}":                handler.PostOrganisationHash,
+	"GET /address/{hash}":                       handler.GetAddressHash,
+	"POST /address/{hash}/delete":               handler.SoftDeleteAddressHash,
+	"POST /address/{hash}/undelete":             handler.SoftUndeleteAddressHash,
+	"GET /address/{hash}/status/{fingerprint}":  handler.GetKeyStatus,
+	"POST /address/{hash}/status/{fingerprint}": handler.SetKeyStatus,
+	"DELETE /address/{hash}":                    handler.DeleteAddressHash,
+	"POST /address/{hash}":                      handler.PostAddressHash,
+	"GET /routing/{hash}":                       handler.GetRoutingHash,
+	"DELETE /routing/{hash}":                    handler.DeleteRoutingHash,
+	"POST /routing/{hash}":                      handler.PostRoutingHash,
+	"GET /organisation/{hash}":                  handler.GetOrganisationHash,
+	"POST /organisation/{hash}/delete":          handler.SoftDeleteOrganisationHash,
+	"POST /organisation/{hash}/undelete":        handler.SoftUndeleteOrganisationHash,
+	"DELETE /organisation/{hash}":               handler.DeleteOrganisationHash,
+	"POST /organisation/{hash}":                 handler.PostOrganisationHash,
 }
 
 // HandleRequest checks the incoming route and calls the correct handler for it

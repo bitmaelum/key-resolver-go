@@ -228,7 +228,7 @@ func (b boltResolver) Delete(hash string) (bool, error) {
 	return true, nil
 }
 
-func (b boltResolver) CheckKey(hash string, fingerprint string) (KeyStatus, error) {
+func (b boltResolver) GetKeyStatus(hash string, fingerprint string) (KeyStatus, error) {
 	var ks KeyStatus
 
 	err := b.client.View(func(tx *bolt.Tx) error {
@@ -258,6 +258,12 @@ func (b boltResolver) SetKeyStatus(hash string, fingerprint string, status KeySt
 		bucket := tx.Bucket(b.bucketName)
 		if bucket == nil {
 			return nil
+		}
+
+		// Check if hash+fingerprint exist
+		result := bucket.Get([]byte(hash + fingerprint))
+		if result == nil {
+			return ErrNotFound
 		}
 
 		b, err := json.Marshal(status)

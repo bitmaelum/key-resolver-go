@@ -204,7 +204,7 @@ func (r *SqliteDbResolver) SoftUndelete(hash string) (bool, error) {
 	return true, nil
 }
 
-func (r *SqliteDbResolver) CheckKey(hash string, fingerprint string) (KeyStatus, error) {
+func (r *SqliteDbResolver) GetKeyStatus(hash string, fingerprint string) (KeyStatus, error) {
 	var ks *KeyStatus
 
 	err := r.conn.QueryRow("SELECT status FROM mock_history WHERE hash LIKE ? AND fingerprint LIKE ?", hash, fingerprint).Scan(&ks)
@@ -222,5 +222,13 @@ func (r *SqliteDbResolver) updateKeyHistory(hash string, fingerprint string, sta
 }
 
 func (r *SqliteDbResolver) SetKeyStatus(hash string, fingerprint string, status KeyStatus) error {
+	var ks *KeyStatus
+
+	// Make sure key exists before adding status
+	err := r.conn.QueryRow("SELECT status FROM mock_history WHERE hash LIKE ? AND fingerprint LIKE ?", hash, fingerprint).Scan(&ks)
+	if err != nil {
+		return ErrNotFound
+	}
+
 	return r.updateKeyHistory(hash, fingerprint, status)
 }

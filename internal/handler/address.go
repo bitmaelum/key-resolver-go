@@ -246,19 +246,62 @@ func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Respons
 	return http.CreateOutput("", 204)
 }
 
-func CheckKeyHistory(hash hash.Hash, req http.Request) *http.Response {
+func GetKeyStatus(hash hash.Hash, req http.Request) *http.Response {
 	fp, ok := req.Params["fingerprint"]
 	if !ok {
 		return http.CreateError("not found", 404)
 	}
 
 	repo := address.GetResolveRepository()
-	ok, err := repo.CheckKey(hash.String(), fp)
-	if err != nil || !ok {
+	ks, err := repo.GetKeyStatus(hash.String(), fp)
+	if err != nil {
 		return http.CreateError("not found", 404)
 	}
 
-	return http.CreateOutput("", 204)
+	var statusMap = map[address.KeyStatus]int{
+		address.KSNormal:      204,
+		address.KSCompromised: 410,
+	}
+
+	status, ok := statusMap[ks]
+	if !ok {
+		status = 404
+	}
+
+	return http.CreateOutput("", status)
+}
+
+func SetKeyStatus(hash hash.Hash, req http.Request) *http.Response {
+	fp, ok := req.Params["fingerprint"]
+	if !ok {
+		return http.CreateError("not found", 404)
+	}
+
+	type setKeyRequestBody struct {
+		Status string `json:"status"`
+	}
+
+	body := &setKeyRequestBody{}
+	if req.Body != "" {
+		err := json.Unmarshal([]byte(req.Body), body)
+		if err != nil {
+			log.Print(err)
+			return http.CreateError("invalid body data", 400)
+		}
+	}
+
+	ks, err := address.StringToKeyStatus(body.Status)
+	if err != nil {
+		return http.CreateError("invalid status", 400)
+	}
+
+	repo := address.GetResolveRepository()
+	err = repo.SetKeyStatus(hash.String(), fp, ks)
+	if err != nil {
+		return http.CreateError("error while updating", 400)
+	}
+
+	return http.CreateOutput("key updated", 200)
 }
 
 func updateAddress(uploadBody addressUploadBody, req http.Request, current *address.ResolveInfoType) *http.Response {
