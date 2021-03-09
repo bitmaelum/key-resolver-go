@@ -17,7 +17,8 @@ jobs:
       - name: Build and zip
         run: |
           COMMIT=$(shell git rev-parse HEAD)
-          CGO_ENABLED=0 GOOS=linux go build -o main -X 'github.com/bitmaelum/key-resolver-go/internal.GitCommit=${COMMIT}' cmd/lambda/main.go
+          LDFLAG=github.com/bitmaelum/key-resolver-go/internal.GitCommit=${COMMIT}
+          CGO_ENABLED=0 GOOS=linux go build -o main -ldflags "-X $LDFLAG" cmd/lambda/main.go
           zip -r ./function.zip main
       - name: deploy zip to lambda
         run: |

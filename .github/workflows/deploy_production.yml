@@ -16,7 +16,9 @@ jobs:
           apt-get install -y zip awscli
       - name: Build and zip
         run: |
-          CGO_ENABLED=0 GOOS=linux go build -o main cmd/lambda/main.go
+          COMMIT=$(shell git rev-parse HEAD)
+          LDFLAG=github.com/bitmaelum/key-resolver-go/internal.GitCommit=${COMMIT}
+          CGO_ENABLED=0 GOOS=linux go build -o main -ldflags "-X $LDFLAG" cmd/lambda/main.go
           zip -r ./function.zip main
       - name: deploy zip to lambda
         run: |
