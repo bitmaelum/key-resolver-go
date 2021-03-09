@@ -17,38 +17,22 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-package apigateway
+package address
 
 import (
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/bitmaelum/key-resolver-go/internal/http"
+	"testing"
 )
 
-// ReqToHTTP converts a api gateway http request to our internal http request
-func ReqToHTTP(req *events.APIGatewayV2HTTPRequest) *http.Request {
+func TestSqliteDbResolver(t *testing.T) {
+	db := NewSqliteResolver(":memory:")
+	runRepositoryCreateUpdateTest(t, db)
 
-	httpReq := http.NewRequest(
-		req.RequestContext.HTTP.Method,
-		req.RequestContext.HTTP.Path,
-		req.Body,
-		req.PathParameters,
-	)
+	db = NewSqliteResolver(":memory:")
+	runRepositoryDeletionTests(t, db)
 
-	// Add headers
-	for k, v := range req.Headers {
-		httpReq.Headers.Set(k, v)
-	}
+	db = NewSqliteResolver(":memory:")
+	runRepositoryHistoryCheck(t, db)
 
-	return &httpReq
-}
-
-// HTTPToResp converts an internal http response to an api gateway http response
-func HTTPToResp(resp *http.Response) *events.APIGatewayV2HTTPResponse {
-	return &events.APIGatewayV2HTTPResponse{
-		StatusCode: resp.StatusCode,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
-		Body: resp.Body,
-	}
+	db = NewSqliteResolver(":memory:")
+	runRepositoryHistoryKeyStatus(t, db)
 }

@@ -1,23 +1,16 @@
+<img alt="logo" align=right height=70 src="https://bitmaelum.com/logo_and_name.svg">
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/bitmaelum/key-resolver-go)](https://goreportcard.com/report/github.com/bitmaelum/key-resolver-go)
-![BitMaelum CI](https://github.com/bitmaelum/key-resolver-go/workflows/BitMaelum%20CI/badge.svg?branch=develop)
-[![codecov](https://codecov.io/gh/bitmaelum/key-resolver-go/branch/develop/graph/badge.svg)](https://codecov.io/gh/bitmaelum/key-resolver-go)
+[![BitMaelum Key Resolver](https://github.com/bitmaelum/key-resolver-go/actions/workflows/ci.yml/badge.svg)](https://github.com/bitmaelum/key-resolver-go/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/bitmaelum/key-resolver-go/badge.svg?branch=master)](https://coveralls.io/github/bitmaelum/key-resolver-go?branch=master)
 ![License](https://img.shields.io/github/license/bitmaelum/key-resolver-go)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/bitmaelum/key-resolver-go)         
-[![Gitter](https://badges.gitter.im/bitmaelum/community.svg)](https://gitter.im/bitmaelum/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=bitmaelum_bitmaelum-suite&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=bitmaelum_bitmaelum-suite)
 
-    
-         ____  _ _   __  __            _                 
-        |  _ \(_) | |  \/  |          | |                
-        | |_) |_| |_| \  / | __ _  ___| |_   _ _ __ ___  
-        |  _ <| | __| |\/| |/ _` |/ _ \ | | | | '_ ` _ \ 
-        | |_) | | |_| |  | | (_| |  __/ | |_| | | | | | |
-        |____/|_|\__|_|  |_|\__,_|\___|_|\__,_|_| |_| |_|
-           P r i v a c y   i s   y o u r s   a g a i n                                          
+
+<hr>
 
 # Key resolver
-
-[![codecov](https://codecov.io/gh/bitmaelum/key-resolver-go/branch/develop/graph/badge.svg?token=IHXRZZO8KQ)](undefined)
 
 This repository holds the (centralized) account and routing resolver for BitMaelum.
 

@@ -69,3 +69,16 @@ func TestHandleRequest404(t *testing.T) {
 	assert.Equal(t, "application/json", res.Headers["Content-Type"])
 	assert.Equal(t, "{\n  \"error\": \"Forbidden\"\n}", res.Body)
 }
+
+func TestHandleConfig(t *testing.T) {
+	req := &events.APIGatewayV2HTTPRequest{
+		RouteKey: "GET /config.json",
+	}
+
+	res, err := HandleRequest(*req)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 200, res.StatusCode)
+	assert.Equal(t, "application/json", res.Headers["Content-Type"])
+	assert.JSONEq(t, res.Body, "{\"proof_of_work\":{\"address\": 27,\"organisation\":29}}")
+}

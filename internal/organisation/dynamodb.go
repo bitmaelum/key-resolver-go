@@ -31,7 +31,7 @@ import (
 )
 
 type dynamoDbResolver struct {
-	C         *dynamodb.DynamoDB
+	Dyna      *dynamodb.DynamoDB
 	TableName string
 }
 
@@ -45,12 +45,14 @@ type Record struct {
 	Proof       string   `dynamodbav:"proof"`
 	Validations []string `dynamodbav:"validations"`
 	Serial      uint64   `dynamodbav:"sn"`
+	Deleted     bool     `dynamodbav:"deleted"`
+	DeletedAt   uint64   `dynamodbav:"deleted_at"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
 func NewDynamoDBResolver(client *dynamodb.DynamoDB, tableName string) Repository {
 	return &dynamoDbResolver{
-		C:         client,
+		Dyna:      client,
 		TableName: tableName,
 	}
 }
@@ -74,7 +76,7 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, publicKey, proof string
 		},
 	}
 
-	_, err := r.C.UpdateItem(input)
+	_, err := r.Dyna.UpdateItem(input)
 	if err != nil {
 		log.Print(err)
 		return false, err
@@ -103,12 +105,12 @@ func (r *dynamoDbResolver) Create(hash, publicKey, proof string, validations []s
 		TableName: aws.String(r.TableName),
 	}
 
-	_, err = r.C.PutItem(input)
+	_, err = r.Dyna.PutItem(input)
 	return err == nil, err
 }
 
 func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
-	result, err := r.C.GetItem(&dynamodb.GetItemInput{
+	result, err := r.Dyna.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},
@@ -132,6 +134,11 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		return nil, ErrNotFound
 	}
 
+	// We would prefer if we didn't retrieve it from the Getitem input
+	if record.Deleted {
+		return nil, ErrNotFound
+	}
+
 	return &ResolveInfoType{
 		Hash:        record.Hash,
 		PubKey:      record.PublicKey,
@@ -142,7 +149,7 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 }
 
 func (r *dynamoDbResolver) Delete(hash string) (bool, error) {
-	_, err := r.C.DeleteItem(&dynamodb.DeleteItemInput{
+	_, err := r.Dyna.DeleteItem(&dynamodb.DeleteItemInput{
 		TableName: aws.String(r.TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},
@@ -150,6 +157,48 @@ func (r *dynamoDbResolver) Delete(hash string) (bool, error) {
 	})
 
 	// Error while deleting record
+	if err != nil {
+		log.Print(err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *dynamoDbResolver) SoftDelete(hash string) (bool, error) {
+	input := &dynamodb.UpdateItemInput{
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":dt": {N: aws.String(strconv.FormatInt(time.Now().Unix(), 10))},
+		},
+		TableName:        aws.String(r.TableName),
+		UpdateExpression: aws.String("SET deleted=1, deleted_at=:dt"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"hash": {S: aws.String(hash)},
+		},
+	}
+
+	_, err := r.Dyna.UpdateItem(input)
+	if err != nil {
+		log.Print(err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *dynamoDbResolver) SoftUndelete(hash string) (bool, error) {
+	input := &dynamodb.UpdateItemInput{
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":dt": {N: aws.String("")},
+		},
+		TableName:        aws.String(r.TableName),
+		UpdateExpression: aws.String("SET deleted=0, deleted_at=:dt"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"hash": {S: aws.String(hash)},
+		},
+	}
+
+	_, err := r.Dyna.UpdateItem(input)
 	if err != nil {
 		log.Print(err)
 		return false, err

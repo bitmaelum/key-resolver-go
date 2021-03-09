@@ -17,38 +17,22 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-package apigateway
+package testing
 
 import (
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/bitmaelum/key-resolver-go/internal/http"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// ReqToHTTP converts a api gateway http request to our internal http request
-func ReqToHTTP(req *events.APIGatewayV2HTTPRequest) *http.Request {
+func TestReadTestKey(t *testing.T) {
+	priv, pub, err := ReadTestKey("../../testdata/key-7.json")
+	assert.NoError(t, err)
+	assert.Equal(t, priv.String(), "ed25519 MC4CAQAwBQYDK2VwBCIEIApsDq5uwKSUNlmw9z3u63CeNdrfDgBOkJRmvM6gvQj3")
+	assert.Equal(t, pub.String(), "ed25519 MCowBQYDK2VwAyEA1xbVcwtwUx9EFnvZltYd7qz1FxwJOOugkkA9vHYxoQM=")
 
-	httpReq := http.NewRequest(
-		req.RequestContext.HTTP.Method,
-		req.RequestContext.HTTP.Path,
-		req.Body,
-		req.PathParameters,
-	)
-
-	// Add headers
-	for k, v := range req.Headers {
-		httpReq.Headers.Set(k, v)
-	}
-
-	return &httpReq
-}
-
-// HTTPToResp converts an internal http response to an api gateway http response
-func HTTPToResp(resp *http.Response) *events.APIGatewayV2HTTPResponse {
-	return &events.APIGatewayV2HTTPResponse{
-		StatusCode: resp.StatusCode,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
-		Body: resp.Body,
-	}
+	priv, pub, err = ReadTestKey("../does-not-exist.json")
+	assert.Error(t, err)
+	assert.Nil(t, priv)
+	assert.Nil(t, pub)
 }

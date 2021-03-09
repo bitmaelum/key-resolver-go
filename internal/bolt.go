@@ -23,7 +23,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 var boltdb *bolt.DB

@@ -20,9 +20,6 @@
 package address
 
 import (
-	"io/ioutil"
-	"log"
-	"os"
 	"testing"
 	"time"
 
@@ -81,7 +78,11 @@ func TestToken(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestMain(m *testing.M) {
-	log.SetOutput(ioutil.Discard)
-	os.Exit(m.Run())
+func TestGenerateToken(t *testing.T) {
+	h1 := hash.Hash("address1")
+	expires := time.Date(2010, 12, 31, 12, 34, 56, 0, time.UTC)
+	priv, _, _ := testing2.ReadTestKey("../../testdata/key-1.json")
+
+	tok := GenerateToken(h1, "12345678", expires, *priv)
+	assert.Equal(t, "YWRkcmVzczE6MTIzNDU2Nzg6MTI5Mzc5ODg5NjrIdRSDpUD51Xmk+Yvfo8PI9DM/nsdJaT2I/nOikqrj/b+NdjWw7tZkEYj8/Vn63cnNdoaAO3xsFBbBClEOz+/Sfvm3JjLJ0aYVJ2IFXbRc2PxOY64ISw3xU+vYCPQLw/7goCN/2ktS5FW8qpuW8KkUepOl7hfVOHp45rJqtdtOypsvxyyPal1LxfGoVE1vg9VXPXbpQob7LS0nWUi6cKTbq2d1y3U92timd9CZofhcuX6q4J+nHuwYD1NVYz1ssDSs5wr8h/rpnCO08q3cJA24+erAsLjFjqMRCbk9wi3AogK1C3dPmrNZ8ZAAyFrMahp18qRQRirGLqdWfE5oczl6", tok)
 }

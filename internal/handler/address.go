@@ -62,7 +62,7 @@ func GetAddressHash(hash hash.Hash, _ http.Request) *http.Response {
 		return http.CreateError("hash not found", 404)
 	}
 
-	if info == nil {
+	if info == nil || info.Deleted {
 		log.Print(err)
 		return http.CreateError("hash not found", 404)
 	}
@@ -153,7 +153,6 @@ func deleteAddressHashByOwner(addrHash hash.Hash, req http.Request) *http.Respon
 
 	res, err := repo.Delete(current.Hash)
 	if err != nil || !res {
-		log.Print(err)
 		return http.CreateError("error while deleting record", 500)
 	}
 
@@ -201,13 +200,117 @@ func deleteAddressHashByOrganization(addrHash hash.Hash, organizationInfo *organ
 	return http.CreateOutput("ok", 200)
 }
 
+func SoftDeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
+	repo := address.GetResolveRepository()
+	current, err := repo.Get(addrHash.String())
+	if err != nil {
+		return http.CreateError("error while fetching record", 500)
+	}
+
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
+		return http.CreateError("unauthenticated", 401)
+	}
+
+	if current == nil || current.Deleted {
+		return http.CreateError("cannot find record", 404)
+	}
+
+	res, err := repo.SoftDelete(current.Hash)
+	if err != nil || !res {
+		return http.CreateError("error while deleting record", 500)
+	}
+
+	return http.CreateOutput("", 204)
+}
+
+func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
+	repo := address.GetResolveRepository()
+	current, err := repo.Get(addrHash.String())
+	if err != nil {
+		return http.CreateError("error while fetching record", 500)
+	}
+
+	if current == nil {
+		return http.CreateError("cannot find record", 404)
+	}
+
+	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
+		return http.CreateError("unauthenticated", 401)
+	}
+
+	res, err := repo.SoftUndelete(current.Hash)
+	if err != nil || !res {
+		return http.CreateError("error while undeleting record", 500)
+	}
+
+	return http.CreateOutput("", 204)
+}
+
+func GetKeyStatus(hash hash.Hash, req http.Request) *http.Response {
+	fp, ok := req.Params["fingerprint"]
+	if !ok {
+		return http.CreateError("not found", 404)
+	}
+
+	repo := address.GetResolveRepository()
+	ks, err := repo.GetKeyStatus(hash.String(), fp)
+	if err != nil {
+		return http.CreateError("not found", 404)
+	}
+
+	var statusMap = map[address.KeyStatus]int{
+		address.KSNormal:      204,
+		address.KSCompromised: 410,
+	}
+
+	status, ok := statusMap[ks]
+	if !ok {
+		status = 404
+	}
+
+	return http.CreateOutput("", status)
+}
+
+func SetKeyStatus(hash hash.Hash, req http.Request) *http.Response {
+	fp, ok := req.Params["fingerprint"]
+	if !ok {
+		return http.CreateError("not found", 404)
+	}
+
+	type setKeyRequestBody struct {
+		Status string `json:"status"`
+	}
+
+	body := &setKeyRequestBody{}
+	if req.Body != "" {
+		err := json.Unmarshal([]byte(req.Body), body)
+		if err != nil {
+			log.Print(err)
+			return http.CreateError("invalid body data", 400)
+		}
+	}
+
+	ks, err := address.StringToKeyStatus(body.Status)
+	if err != nil {
+		return http.CreateError("invalid status", 400)
+	}
+
+	repo := address.GetResolveRepository()
+	err = repo.SetKeyStatus(hash.String(), fp, ks)
+	if err != nil {
+		return http.CreateError("error while updating", 400)
+	}
+
+	return http.CreateOutput("key updated", 200)
+}
+
 func updateAddress(uploadBody addressUploadBody, req http.Request, current *address.ResolveInfoType) *http.Response {
 	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
 	}
 
 	repo := address.GetResolveRepository()
-	res, err := repo.Update(current, uploadBody.RoutingID, uploadBody.PublicKey.String())
+	res, err := repo.Update(current, uploadBody.RoutingID, uploadBody.PublicKey)
 
 	if err != nil || !res {
 		log.Print(err)
@@ -229,7 +332,7 @@ func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Respo
 	}
 
 	repo := address.GetResolveRepository()
-	res, err := repo.Create(addrHash.String(), uploadBody.RoutingID, uploadBody.PublicKey.String(), uploadBody.Proof.String())
+	res, err := repo.Create(addrHash.String(), uploadBody.RoutingID, uploadBody.PublicKey, uploadBody.Proof.String())
 	if err != nil || !res {
 		log.Print(err)
 		return http.CreateError("error while creating: ", 500)
