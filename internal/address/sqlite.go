@@ -28,6 +28,7 @@ import (
 
 	"database/sql"
 
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
@@ -64,18 +65,25 @@ func NewSqliteResolver(dsn string) Repository {
 		return nil
 	}
 
+	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_history (hash VARCHAR(64), fingerprint VARCHAR(64), status INTEGER, PRIMARY KEY (hash, fingerprint))")
+	if err != nil {
+		return nil
+	}
+
 	return db
 }
 
-func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
+func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
 	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
+
+	_ = r.updateKeyHistory(info.Hash, publicKey.Fingerprint(), KSNormal)
 
 	st, err := r.conn.Prepare("UPDATE mock_address SET routing_id=?, pubkey=?, serial=? WHERE hash=? AND serial=?")
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(routing, publicKey, newSerial, info.Hash, info.Serial)
+	res, err := st.Exec(routing, publicKey.String(), newSerial, info.Hash, info.Serial)
 	if err != nil {
 		return false, err
 	}
@@ -90,10 +98,12 @@ func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing, publicKey stri
 	return true, nil
 }
 
-func (r *SqliteDbResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
+func (r *SqliteDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
 	serial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
-	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, 0, 0)", hash, publicKey, routing, proof, serial)
+	_ = r.updateKeyHistory(hash, publicKey.Fingerprint(), KSNormal)
+
+	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, 0, 0)", hash, publicKey.String(), routing, proof, serial)
 	if err != nil {
 		return false, err
 	}
@@ -192,4 +202,33 @@ func (r *SqliteDbResolver) SoftUndelete(hash string) (bool, error) {
 		return false, errors.New("not soft undeleted")
 	}
 	return true, nil
+}
+
+func (r *SqliteDbResolver) GetKeyStatus(hash string, fingerprint string) (KeyStatus, error) {
+	var ks *KeyStatus
+
+	err := r.conn.QueryRow("SELECT status FROM mock_history WHERE hash LIKE ? AND fingerprint LIKE ?", hash, fingerprint).Scan(&ks)
+	if err != nil {
+		return KSNormal, ErrNotFound
+	}
+
+	return *ks, nil
+}
+
+func (r *SqliteDbResolver) updateKeyHistory(hash string, fingerprint string, status KeyStatus) error {
+	_, err := r.conn.Exec("INSERT OR REPLACE INTO mock_history VALUES (?, ?, ?)", hash, fingerprint, status)
+
+	return err
+}
+
+func (r *SqliteDbResolver) SetKeyStatus(hash string, fingerprint string, status KeyStatus) error {
+	var ks *KeyStatus
+
+	// Make sure key exists before adding status
+	err := r.conn.QueryRow("SELECT status FROM mock_history WHERE hash LIKE ? AND fingerprint LIKE ?", hash, fingerprint).Scan(&ks)
+	if err != nil {
+		return ErrNotFound
+	}
+
+	return r.updateKeyHistory(hash, fingerprint, status)
 }

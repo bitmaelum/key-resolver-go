@@ -52,13 +52,13 @@ func TestOrganisation(t *testing.T) {
 	pow := proofofwork.New(22, orgHash.String(), 1783097)
 
 	// Test fetching unknown hash
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res := GetOrganisationHash(orgHash, req)
 	assert.Equal(t, 404, res.StatusCode)
 	assert.Contains(t, res.Body, "hash not found")
 
 	// Insert illegal body
-	req = http.NewRequest("GET", "/", "illegal body that should error")
+	req = http.NewRequest("GET", "/", "illegal body that should error", nil)
 	res = PostOrganisationHash(orgHash, req)
 	assert.Equal(t, 400, res.StatusCode)
 	assert.Contains(t, res.Body, "invalid data")
@@ -70,7 +70,7 @@ func TestOrganisation(t *testing.T) {
 	assert.Equal(t, `"created"`, res.Body)
 
 	// Test fetching known hash
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash, req)
 	assert.Equal(t, 200, res.StatusCode)
 	info := getOrganisationRecord(res)
@@ -99,7 +99,7 @@ func TestOrganisationUpdate(t *testing.T) {
 	assert.NotNil(t, res)
 
 	// Fetch record
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash1, req)
 	assert.Equal(t, 200, res.StatusCode)
 	current := getOrganisationRecord(res)
@@ -121,14 +121,14 @@ func TestOrganisationUpdate(t *testing.T) {
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Update record with correct auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	setRepoTime(time.Date(2010, 12, 13, 12, 34, 56, 1241511, time.UTC))
 	res = updateOrganisation(*body, req, &current)
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t, `"updated"`, res.Body)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash1, req)
 	assert.Equal(t, 200, res.StatusCode)
 	info := getOrganisationRecord(res)
@@ -155,27 +155,27 @@ func TestOrganisationDeletion(t *testing.T) {
 	assert.NotNil(t, res)
 
 	// Delete hash without auth
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "Bearer sdfafsadf")
 	res = DeleteOrganisationHash(orgHash1, req)
 	assert.Equal(t, 401, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash1, req)
 	assert.Equal(t, 200, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash2, req)
 	assert.Equal(t, 200, res.StatusCode)
 
 	// Delete hash with wrong auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++")
 	res = DeleteOrganisationHash(orgHash1, req)
 	assert.Equal(t, 401, res.StatusCode)
 
 	// Fetch record
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash1, req)
 	assert.Equal(t, 200, res.StatusCode)
 	current := getOrganisationRecord(res)
@@ -186,23 +186,23 @@ func TestOrganisationDeletion(t *testing.T) {
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Delete wrong hash with correct auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteOrganisationHash("0000000000000000000000000E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 500, res.StatusCode)
 
 	// Delete hash with auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	// req.Headers.Set("authorization", "BEARER neftRnbcaw2mfudfSkXgBT6SJ3nEXsWzyumiIcDed8y6pBoEPkJkgqCHcwqm9TuqVycjzb3PemDYfvMmUfL9BA==")
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteOrganisationHash(orgHash1, req)
 	assert.Equal(t, 200, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash1, req)
 	assert.Equal(t, 404, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash2, req)
 	assert.Equal(t, 200, res.StatusCode)
 }
@@ -221,7 +221,7 @@ func insertOrganisationRecord(orgHash hash.Hash, keyPath string, pow *proofofwor
 	if err != nil {
 		return nil
 	}
-	req := http.NewRequest("GET", "/", string(b))
+	req := http.NewRequest("GET", "/", string(b), nil)
 
 	return PostOrganisationHash(orgHash, req)
 }

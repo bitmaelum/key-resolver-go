@@ -56,13 +56,13 @@ func TestAddress(t *testing.T) {
 	pow := proofofwork.New(22, addr.Hash().String(), 1540921)
 
 	// Test fetching unknown hash
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res := GetAddressHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 404, res.StatusCode)
 	assert.JSONEq(t, `{ "error": "hash not found" }`, res.Body)
 
 	// Insert illegal body
-	req = http.NewRequest("GET", "/", "illegal body that should error")
+	req = http.NewRequest("GET", "/", "illegal body that should error", nil)
 	res = PostAddressHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 400, res.StatusCode)
 	assert.JSONEq(t, `{ "error": "invalid data" }`, res.Body)
@@ -95,7 +95,7 @@ func TestAddress(t *testing.T) {
 	assert.Equal(t, `"created"`, res.Body)
 
 	// Test fetching known hash
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	info := getAddressRecord(res)
@@ -122,7 +122,7 @@ func TestValidateVerifyHashFailed(t *testing.T) {
 		Proof:     pow,
 	})
 
-	req := http.NewRequest("GET", "/", string(b))
+	req := http.NewRequest("GET", "/", string(b), nil)
 	res := PostAddressHash(addr.Hash(), req)
 	assert.NotNil(t, res)
 	assert.Equal(t, 400, res.StatusCode)
@@ -146,7 +146,7 @@ func TestValidateVerifyNeedTokenForOrg(t *testing.T) {
 		Proof:     pow,
 	})
 
-	req := http.NewRequest("GET", "/", string(b))
+	req := http.NewRequest("GET", "/", string(b), nil)
 	res := PostAddressHash(addr.Hash(), req)
 	assert.NotNil(t, res)
 	assert.Equal(t, 400, res.StatusCode)
@@ -170,7 +170,7 @@ func TestValidateVerifyNoTokenForNonOrg(t *testing.T) {
 		Proof:     pow,
 	})
 
-	req := http.NewRequest("GET", "/", string(b))
+	req := http.NewRequest("GET", "/", string(b), nil)
 	res := PostAddressHash(addr.Hash(), req)
 	assert.NotNil(t, res)
 	assert.Equal(t, 400, res.StatusCode)
@@ -194,7 +194,7 @@ func TestValidateRoutingIDFailed(t *testing.T) {
 		Proof:     pow,
 	})
 
-	req := http.NewRequest("GET", "/", string(b))
+	req := http.NewRequest("GET", "/", string(b), nil)
 	res := PostAddressHash(addr.Hash(), req)
 	assert.NotNil(t, res)
 	assert.Equal(t, 400, res.StatusCode)
@@ -217,7 +217,7 @@ func TestAddressUpdate(t *testing.T) {
 	assert.NotNil(t, res)
 
 	// Fetch addr1 record
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	current := getAddressRecord(res)
@@ -245,7 +245,7 @@ func TestAddressUpdate(t *testing.T) {
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Update record with correct auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	// req.Headers.Set("authorization", "BEARER 2UxSWVAUJ/iIr59x76B9bF/CeQXDi4dTY4D73P8iJwE/CRaIpRyg1RHMbfLVM6fz3sfOammn8wzhooxfv6BVAg==")
 
@@ -254,7 +254,7 @@ func TestAddressUpdate(t *testing.T) {
 	assert.Equal(t, 200, res.StatusCode)
 	assert.Equal(t, `"updated"`, res.Body)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	info := getAddressRecord(res)
@@ -280,29 +280,29 @@ func TestAddressDeletion(t *testing.T) {
 	assert.NotNil(t, res)
 
 	// Delete hash without auth
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "Bearer sdfafsadf")
 	res = DeleteAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
 	// Delete hash with wrong auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++")
 	res = DeleteAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 
 	// Delete wrong hash with wrong auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++wes1RLx7Q1O26cmcvpsAV/7I0e+ISDSzHHW82zuvLw0IaqZ7xngrkz4QdG00VGi3mS6bNSjQqU4Yxrqoiwk/o/jVD0/MHLxYbJHn+taL2sEeSMBvfkc5zHoqsNAgZQ7anvAsYASF30NR3pGvp/66P801sYxJYrIv4b48U2Z3pQZHozDY2e4YUA+14ZWZIYqQ+K8yCa78KTSTy5mDznP2Hpvnsy6sT8R93u2aLk++vLCmRby3REGfYRaWDxSGxgXjCgVqiLdFRLhg==")
 	res = DeleteAddressHash("00000000000000000000000000000317ae30d319295b491e86e9a5ffdab8fd7e", req)
 	assert.Equal(t, 500, res.StatusCode)
 
 	// Fetch addr1 record
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	current := getAddressRecord(res)
@@ -313,12 +313,12 @@ func TestAddressDeletion(t *testing.T) {
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Delete hash with auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 404, res.StatusCode)
 	res = GetAddressHash(addr2.Hash(), req)
@@ -341,29 +341,29 @@ func TestAddressSoftDeletion(t *testing.T) {
 	assert.NotNil(t, res)
 
 	// Delete hash without auth
-	req := http.NewRequest("POST", "/", "")
+	req := http.NewRequest("POST", "/", "", nil)
 	req.Headers.Set("authorization", "Bearer sdfafsadf")
 	res = SoftDeleteAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
 	// Delete hash with wrong auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++")
 	res = SoftDeleteAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 
 	// Delete wrong hash with wrong auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER okqF4rW/bFoNvmxk29NLb3lbTHCpir8A86i4IiK0j6211+WMOFCr91RodeBLSCXx167VOhC/++wes1RLx7Q1O26cmcvpsAV/7I0e+ISDSzHHW82zuvLw0IaqZ7xngrkz4QdG00VGi3mS6bNSjQqU4Yxrqoiwk/o/jVD0/MHLxYbJHn+taL2sEeSMBvfkc5zHoqsNAgZQ7anvAsYASF30NR3pGvp/66P801sYxJYrIv4b48U2Z3pQZHozDY2e4YUA+14ZWZIYqQ+K8yCa78KTSTy5mDznP2Hpvnsy6sT8R93u2aLk++vLCmRby3REGfYRaWDxSGxgXjCgVqiLdFRLhg==")
 	res = SoftDeleteAddressHash("00000000000000000000000000000317ae30d319295b491e86e9a5ffdab8fd7e", req)
 	assert.Equal(t, 500, res.StatusCode)
 
 	// Fetch addr1 record
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	current := getAddressRecord(res)
@@ -374,24 +374,24 @@ func TestAddressSoftDeletion(t *testing.T) {
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Soft delete hash with auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = SoftDeleteAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 204, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 404, res.StatusCode)
 	res = GetAddressHash(addr2.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
 	// Soft undelete hash with auth
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = SoftUndeleteAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 204, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	res = GetAddressHash(addr2.Hash(), req)
@@ -452,7 +452,7 @@ func TestAddOrganisationalAddresses(t *testing.T) {
 	assert.Contains(t, res.Body, "created")
 
 	// Check if record exists
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	info := getAddressRecord(res)
@@ -497,7 +497,7 @@ func TestAllowUpdateToOrgAddressWithoutToken(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Get serial
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	info := getAddressRecord(res)
@@ -505,7 +505,7 @@ func TestAllowUpdateToOrgAddressWithoutToken(t *testing.T) {
 	sig := addr.Hash().String() + info.RoutingID + strconv.FormatUint(info.Serial, 10)
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
-	req = http.NewRequest("POST", "/account/"+addr.Hash().String(), string(b))
+	req = http.NewRequest("POST", "/account/"+addr.Hash().String(), string(b), nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = PostAddressHash(addr.Hash(), req)
 	assert.Equal(t, "\"updated\"", res.Body)
@@ -541,7 +541,7 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 		assert.Contains(t, res.Body, "created")
 
 		// Check if record exists
-		req := http.NewRequest("GET", "/", "")
+		req := http.NewRequest("GET", "/", "", nil)
 		res = GetAddressHash(addr.Hash(), req)
 		assert.Equal(t, 200, res.StatusCode)
 	}
@@ -551,7 +551,7 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	insertRecords()
 
 	// Fetch addr record
-	req := http.NewRequest("GET", "/", "")
+	req := http.NewRequest("GET", "/", "", nil)
 	res := GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 	current := getAddressRecord(res)
@@ -562,13 +562,13 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Delete as "regular" user
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	// req.Headers.Set("authorization", "BEARER 2UxSWVAUJ/iIr59x76B9bF/CeQXDi4dTY4D73P8iJwE/CRaIpRyg1RHMbfLVM6fz3sfOammn8wzhooxfv6BVAg==")
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 404, res.StatusCode)
 
@@ -582,12 +582,12 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	authToken = http.GenerateAuthenticationToken([]byte(sig), *privKey)
 
 	// Delete as correct "organisation" user, but without body
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash(addr.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
@@ -599,13 +599,13 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	}
 	b, _ := json.Marshal(ob)
 
-	req = http.NewRequest("GET", "/", string(b))
+	req = http.NewRequest("GET", "/", string(b), nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash(addr.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 	assert.Contains(t, res.Body, "error validating address")
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
@@ -617,12 +617,12 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	}
 	b, _ = json.Marshal(ob)
 
-	req = http.NewRequest("GET", "/", string(b))
+	req = http.NewRequest("GET", "/", string(b), nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr.Hash(), req)
 	assert.Equal(t, 404, res.StatusCode)
 
@@ -636,13 +636,79 @@ func TestDeleteOrganisationalAddresses(t *testing.T) {
 	// Delete as incorrect "other organisation" user
 	insertRecords()
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = DeleteAddressHash(addr.Hash(), req)
 	assert.Equal(t, 401, res.StatusCode)
 
-	req = http.NewRequest("GET", "/", "")
+	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr.Hash(), req)
+	assert.Equal(t, 200, res.StatusCode)
+}
+
+func TestHistory(t *testing.T) {
+	setupRepo()
+
+	addr, _ := pkgAddress.NewAddress("example!")
+	addr2, _ := pkgAddress.NewAddress("someoneelse!")
+	pow := proofofwork.New(22, addr.Hash().String(), 1540921)
+
+	_, pub, _ := testing2.ReadTestKey("../../testdata/key-4.json")
+	_, pub2, _ := testing2.ReadTestKey("../../testdata/key-3.json")
+
+	// Insert new hash
+	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow)
+	assert.NotNil(t, res)
+	assert.Equal(t, 201, res.StatusCode)
+	assert.Equal(t, `"created"`, res.Body)
+
+	// Test history of key
+	req := http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = GetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 204, res.StatusCode)
+
+	// Check history of non-existing key
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub2.Fingerprint(), "", map[string]string{
+		"fingerprint": pub2.Fingerprint(),
+	})
+	res = GetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 404, res.StatusCode)
+
+	// Check history of existing key on different account
+	req = http.NewRequest("GET", "/address/"+addr2.Hash().String()+"/check/"+pub.Fingerprint(), "", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = GetKeyStatus(addr2.Hash(), req)
+	assert.Equal(t, 404, res.StatusCode)
+
+	// Set key to unknown status
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "{\"status\":\"unknown\"}", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = SetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 400, res.StatusCode)
+
+	// Set key to compromised
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "{\"status\":\"compromised\"}", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = SetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 200, res.StatusCode)
+
+	// Check history of key again
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = GetKeyStatus(addr.Hash(), req)
+	assert.Equal(t, 410, res.StatusCode)
+
+	// Set key to normal
+	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "{\"status\":\"normal\"}", map[string]string{
+		"fingerprint": pub.Fingerprint(),
+	})
+	res = SetKeyStatus(addr.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 }
 
@@ -695,7 +761,7 @@ func insertAddressRecord(addr pkgAddress.Address, keyPath, routingId, orgToken s
 	if err != nil {
 		return nil
 	}
-	req := http.NewRequest("GET", "/", string(b))
+	req := http.NewRequest("GET", "/", string(b), nil)
 
 	return PostAddressHash(addr.Hash(), req)
 }

@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/key-resolver-go/internal"
 	bolt "go.etcd.io/bbolt"
 )
@@ -64,7 +65,7 @@ func (b boltResolver) Get(hash string) (*ResolveInfoType, error) {
 	return rec, nil
 }
 
-func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, error) {
+func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
 	err := b.client.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(b.bucketName)
 		if err != nil {
@@ -74,7 +75,7 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 		rec := &ResolveInfoType{
 			Hash:      hash,
 			RoutingID: routing,
-			PubKey:    publicKey,
+			PubKey:    publicKey.String(),
 			Proof:     proof,
 			Serial:    uint64(time.Now().UnixNano()),
 			Deleted:   false,
@@ -85,7 +86,22 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 			return err
 		}
 
-		return bucket.Put([]byte(hash), buf)
+		err = bucket.Put([]byte(hash), buf)
+		if err != nil {
+			return err
+		}
+
+		// Store in history
+		bucket, err = tx.CreateBucketIfNotExists([]byte(hash + "fingerprints"))
+		if err != nil {
+			return err
+		}
+
+		b, err := json.Marshal(KSNormal)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(publicKey.Fingerprint()), b)
 	})
 
 	if err != nil {
@@ -95,7 +111,7 @@ func (b boltResolver) Create(hash, routing, publicKey, proof string) (bool, erro
 	return true, nil
 }
 
-func (b boltResolver) Update(info *ResolveInfoType, routing, publicKey string) (bool, error) {
+func (b boltResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
 	err := b.client.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(b.bucketName)
 		if bucket == nil {
@@ -112,13 +128,28 @@ func (b boltResolver) Update(info *ResolveInfoType, routing, publicKey string) (
 		}
 
 		rec.RoutingID = routing
-		rec.PubKey = publicKey
+		rec.PubKey = publicKey.String()
 		buf, err := json.Marshal(rec)
 		if err != nil {
 			return err
 		}
 
-		return bucket.Put([]byte(info.Hash), buf)
+		err = bucket.Put([]byte(info.Hash), buf)
+		if err != nil {
+			return err
+		}
+
+		// Store in history (overwrite if already exists)
+		bucket, err = tx.CreateBucketIfNotExists([]byte(info.Hash + "fingerprints"))
+		if err != nil {
+			return err
+		}
+
+		b, err := json.Marshal(KSNormal)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(publicKey.Fingerprint()), b)
 	})
 
 	if err != nil {
@@ -190,21 +221,6 @@ func (b boltResolver) SoftUndelete(hash string) (bool, error) {
 	return true, nil
 }
 
-func getFromBucket(bucket *bolt.Bucket, hash string) (*ResolveInfoType, error) {
-	data := bucket.Get([]byte(hash))
-	if data == nil {
-		return nil, ErrNotFound
-	}
-
-	rec := &ResolveInfoType{}
-	err := json.Unmarshal(data, &rec)
-	if err != nil {
-		return nil, ErrNotFound
-	}
-
-	return rec, nil
-}
-
 func (b boltResolver) Delete(hash string) (bool, error) {
 	err := b.client.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(b.bucketName)
@@ -220,4 +236,66 @@ func (b boltResolver) Delete(hash string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (b boltResolver) GetKeyStatus(hash string, fingerprint string) (KeyStatus, error) {
+	var ks KeyStatus
+
+	err := b.client.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(hash + "fingerprints"))
+		if bucket == nil {
+			return ErrNotFound
+		}
+
+		result := bucket.Get([]byte(fingerprint))
+		if result == nil {
+			return ErrNotFound
+		}
+
+		err := json.Unmarshal(result, &ks)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return ks, err
+}
+
+func (b boltResolver) SetKeyStatus(hash string, fingerprint string, status KeyStatus) error {
+	return b.client.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(hash + "fingerprints"))
+		if bucket == nil {
+			return nil
+		}
+
+		// Check if hash+fingerprint exist
+		result := bucket.Get([]byte(fingerprint))
+		if result == nil {
+			return ErrNotFound
+		}
+
+		b, err := json.Marshal(status)
+		if err != nil {
+			return err
+		}
+
+		return bucket.Put([]byte(fingerprint), b)
+	})
+}
+
+func getFromBucket(bucket *bolt.Bucket, hash string) (*ResolveInfoType, error) {
+	data := bucket.Get([]byte(hash))
+	if data == nil {
+		return nil, ErrNotFound
+	}
+
+	rec := &ResolveInfoType{}
+	err := json.Unmarshal(data, &rec)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+
+	return rec, nil
 }

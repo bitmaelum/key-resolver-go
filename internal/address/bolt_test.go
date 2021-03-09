@@ -32,8 +32,6 @@ func TestBoltResolver(t *testing.T) {
 	// Random path, otherwise we get into issues with running on github actions?
 	p := fmt.Sprintf(tmpDbPath, rand.Int63())
 
-	fmt.Println("BOLTDB FILE: ", p)
-
 	_ = os.Setenv("USE_BOLT", "1")
 	_ = os.Setenv("BOLT_DB_FILE", p)
 	SetDefaultRepository(nil)
@@ -45,6 +43,14 @@ func TestBoltResolver(t *testing.T) {
 	_ = os.Remove(p)
 	db = NewBoltResolver()
 	runRepositoryDeletionTests(t, db)
+
+	_ = os.Remove(p)
+	db = NewBoltResolver()
+	runRepositoryHistoryCheck(t, db)
+
+	_ = os.Remove(p)
+	db = NewBoltResolver()
+	runRepositoryHistoryKeyStatus(t, db)
 
 	_ = os.Remove(p)
 }
