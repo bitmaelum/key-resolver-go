@@ -86,6 +86,10 @@ func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, p
 			return err
 		}
 
+		err = bucket.Put([]byte(hash), buf)
+		if err != nil {
+			return err
+		}
 
 		// Store in history
 		bucket, err = tx.CreateBucketIfNotExists([]byte(hash + "fingerprints"))
@@ -97,12 +101,7 @@ func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, p
 		if err != nil {
 			return err
 		}
-		err = bucket.Put([]byte(publicKey.Fingerprint()), b)
-		if err != nil {
-			return err
-		}
-
-		return bucket.Put([]byte(hash), buf)
+		return bucket.Put([]byte(publicKey.Fingerprint()), b)
 	})
 
 	if err != nil {
