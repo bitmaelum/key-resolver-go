@@ -86,12 +86,18 @@ func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, p
 			return err
 		}
 
+
 		// Store in history
+		bucket, err = tx.CreateBucketIfNotExists([]byte(hash + "fingerprints"))
+		if err != nil {
+			return err
+		}
+
 		b, err := json.Marshal(KSNormal)
 		if err != nil {
 			return err
 		}
-		err = bucket.Put([]byte(hash+publicKey.Fingerprint()), b)
+		err = bucket.Put([]byte(publicKey.Fingerprint()), b)
 		if err != nil {
 			return err
 		}
@@ -232,12 +238,12 @@ func (b boltResolver) GetKeyStatus(hash string, fingerprint string) (KeyStatus, 
 	var ks KeyStatus
 
 	err := b.client.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(b.bucketName)
+		bucket := tx.Bucket([]byte(hash + "fingerprints"))
 		if bucket == nil {
 			return ErrNotFound
 		}
 
-		result := bucket.Get([]byte(hash + fingerprint))
+		result := bucket.Get([]byte(fingerprint))
 		if result == nil {
 			return ErrNotFound
 		}
@@ -255,13 +261,13 @@ func (b boltResolver) GetKeyStatus(hash string, fingerprint string) (KeyStatus, 
 
 func (b boltResolver) SetKeyStatus(hash string, fingerprint string, status KeyStatus) error {
 	return b.client.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(b.bucketName)
+		bucket := tx.Bucket([]byte(hash + "fingerprints"))
 		if bucket == nil {
 			return nil
 		}
 
 		// Check if hash+fingerprint exist
-		result := bucket.Get([]byte(hash + fingerprint))
+		result := bucket.Get([]byte(fingerprint))
 		if result == nil {
 			return ErrNotFound
 		}
@@ -271,7 +277,7 @@ func (b boltResolver) SetKeyStatus(hash string, fingerprint string, status KeySt
 			return err
 		}
 
-		return bucket.Put([]byte(hash+fingerprint), b)
+		return bucket.Put([]byte(fingerprint), b)
 	})
 }
 
