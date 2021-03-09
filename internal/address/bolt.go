@@ -134,17 +134,22 @@ func (b boltResolver) Update(info *ResolveInfoType, routing string, publicKey *b
 			return err
 		}
 
-		// Store in history (overwrite if already exists)
-		b, err := json.Marshal(KSNormal)
-		if err != nil {
-			return err
-		}
-		err = bucket.Put([]byte(info.Hash+publicKey.Fingerprint()), b)
+		err = bucket.Put([]byte(info.Hash), buf)
 		if err != nil {
 			return err
 		}
 
-		return bucket.Put([]byte(info.Hash), buf)
+		// Store in history (overwrite if already exists)
+		bucket, err = tx.CreateBucketIfNotExists([]byte(info.Hash + "fingerprints"))
+		if err != nil {
+			return err
+		}
+
+		b, err := json.Marshal(KSNormal)
+		if err != nil {
+			return err
+		}
+		return bucket.Put([]byte(publicKey.Fingerprint()), b)
 	})
 
 	if err != nil {
