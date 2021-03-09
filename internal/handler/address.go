@@ -207,12 +207,12 @@ func SoftDeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response 
 		return http.CreateError("error while fetching record", 500)
 	}
 
-	if current == nil || current.Deleted {
-		return http.CreateError("cannot find record", 404)
-	}
-
 	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
 		return http.CreateError("unauthenticated", 401)
+	}
+
+	if current == nil || current.Deleted {
+		return http.CreateError("cannot find record", 404)
 	}
 
 	res, err := repo.SoftDelete(current.Hash)
