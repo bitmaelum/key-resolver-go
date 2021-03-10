@@ -21,7 +21,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -120,10 +119,8 @@ func logMetric(path string, statusCode int) {
 	}))
 	dyna := dynamodb.New(sess)
 
-	// Update address record
-	ret, err := dyna.UpdateItem(input)
-	fmt.Println(ret)
-	fmt.Println(err)
+	// Update logging
+	_, _ = dyna.UpdateItem(input)
 }
 
 func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
