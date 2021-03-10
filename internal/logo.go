@@ -19,7 +19,7 @@
 
 package internal
 
-var GitCommit = "dev"
+var GitCommit = "dev      "
 
 var Logo = " ____  _ _   __  __            _\n" +
 	"|  _ \\(_) | |  \\/  |          | |  " + GitCommit[:8] + "\n" +
