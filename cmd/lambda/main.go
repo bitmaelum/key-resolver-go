@@ -60,19 +60,21 @@ var handlerMapping = map[string]HandlerFunc{
 
 // HandleRequest checks the incoming route and calls the correct handler for it
 func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
-	logMetric(req.RouteKey)
-
 	if req.RouteKey == "GET /" {
+		logMetric(req.RouteKey, 200)
 		return getIndex(req), nil
 	}
 
 	if req.RouteKey == "GET /config.json" {
+		logMetric(req.RouteKey, 200)
 		return getConfig(req), nil
 	}
 
 	h, err := hash.NewFromHash(req.PathParameters["hash"])
 	if err != nil {
 		resp := http.CreateError("Incorrect hash address", 400)
+
+		logMetric(req.RouteKey, 400)
 		return apigateway.HTTPToResp(resp), nil
 	}
 
@@ -89,13 +91,14 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 		httpResp = http.CreateError("Forbidden", 403)
 	}
 
+	logMetric(req.RouteKey, httpResp.StatusCode)
 	return apigateway.HTTPToResp(httpResp), nil
 }
 
 /**
  * Increase metrics
  */
-func logMetric(path string) {
+func logMetric(path string, statusCode int) {
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeNames: map[string]*string{
 			"#hits": aws.String("hits"),
@@ -108,6 +111,7 @@ func logMetric(path string) {
 		UpdateExpression: aws.String("SET #hits = if_not_exists(#hits, :zero) + :inc"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"path": {S: aws.String(path)},
+			"code": {N: aws.String(code)},
 		},
 	}
 
