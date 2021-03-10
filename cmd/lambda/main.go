@@ -27,6 +27,9 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/key-resolver-go/internal"
 	"github.com/bitmaelum/key-resolver-go/internal/apigateway"
@@ -56,6 +59,8 @@ var handlerMapping = map[string]HandlerFunc{
 
 // HandleRequest checks the incoming route and calls the correct handler for it
 func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+	logMetric(req.RouteKey)
+
 	if req.RouteKey == "GET /" {
 		return getIndex(req), nil
 	}
@@ -84,6 +89,30 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	}
 
 	return apigateway.HTTPToResp(httpResp), nil
+}
+
+/**
+ * Increase metrics
+ */
+func logMetric(path string) {
+	input := &dynamodb.UpdateItemInput{
+		ExpressionAttributeNames: map[string]*string{
+			"#count": aws.String("count"),
+		},
+		TableName:           aws.String("prometheus"),
+		UpdateExpression:    aws.String("SET #count = #count + 1"),
+		Key: map[string]*dynamodb.AttributeValue{
+			"path": {S: aws.String(path)},
+		},
+	}
+
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+	dyna := dynamodb.New(sess)
+
+	// Update address record
+	_, _ = dyna.UpdateItem(input)
 }
 
 func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
