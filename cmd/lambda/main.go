@@ -68,7 +68,7 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 
 	if req.RouteKey == "GET /prometheus-export" {
 		internal.LogMetric(req.RouteKey, 200)
-		return getConfig(req), nil
+		return internal.ExportMetric(), nil
 	}
 
 	h, err := hash.NewFromHash(req.PathParameters["hash"])
