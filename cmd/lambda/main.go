@@ -101,10 +101,11 @@ func logMetric(path string) {
 			"#hits": aws.String("hits"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":num": {N: aws.String("1")},
+			":inc": {N: aws.String("1")},
+			":zero": {N: aws.String("0")},
 		},
 		TableName:        aws.String("prometheus"),
-		UpdateExpression: aws.String("SET #hits = #hits + :num"),
+		UpdateExpression: aws.String("SET #hits = if_not_exists(#hits, :zero) + :inc"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"path": {S: aws.String(path)},
 		},
