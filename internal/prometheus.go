@@ -40,7 +40,7 @@ func ExportMetric() *events.APIGatewayV2HTTPResponse {
 
 	var body = ""
 	body += "# HELP keyresolver_request BitMaelum keyresolver \n"
-	body += "# TYPE keyresolver_request gauge\n"
+	body += "# TYPE keyresolver_request counter\n"
 
 	input := &dynamodb.ScanInput{
 	    ExpressionAttributeNames: map[string]*string{
@@ -60,7 +60,7 @@ func ExportMetric() *events.APIGatewayV2HTTPResponse {
 			parts := strings.Split(*s, " ")
 
 			hits := result.Items[i]["hits"].N
-			body += fmt.Sprintf("keyresolver_request{method=\"%s\" path=\"%s\", code=%s} = %s\n", parts[0], parts[1], parts[2], *hits)
+			body += fmt.Sprintf("keyresolver_request{method=\"%s\", path=\"%s\", code=%s} = %s\n", parts[0], parts[1], parts[2], *hits)
 		}
 	}
 
