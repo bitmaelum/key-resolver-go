@@ -38,7 +38,9 @@ func LogMetric(path string, statusCode int) {
 func ExportMetric() *events.APIGatewayV2HTTPResponse {
 	headers := map[string]string{}
 
-	body := ""
+	var body = ""
+	body += "# HELP keyresolver_request BitMaelum keyresolver \n"
+	body += "# TYPE keyresolver_request gauge\n"
 
 	input := &dynamodb.ScanInput{
 	    ExpressionAttributeNames: map[string]*string{
