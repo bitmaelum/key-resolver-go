@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -110,8 +111,7 @@ func logMetric(path string, statusCode int) {
 		TableName:        aws.String("prometheus"),
 		UpdateExpression: aws.String("SET #hits = if_not_exists(#hits, :zero) + :inc"),
 		Key: map[string]*dynamodb.AttributeValue{
-			"path": {S: aws.String(path)},
-			"code": {N: aws.String(code)},
+			"path_code": {S: aws.String(path + " " + strconv.Itoa(statusCode))},
 		},
 	}
 
