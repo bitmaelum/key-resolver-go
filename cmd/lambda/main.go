@@ -22,15 +22,11 @@ package main
 import (
 	"encoding/json"
 	"math/rand"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/key-resolver-go/internal"
 	"github.com/bitmaelum/key-resolver-go/internal/apigateway"
@@ -61,12 +57,17 @@ var handlerMapping = map[string]HandlerFunc{
 // HandleRequest checks the incoming route and calls the correct handler for it
 func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
 	if req.RouteKey == "GET /" {
-		logMetric(req.RouteKey, 200)
+		internal.LogMetric(req.RouteKey, 200)
 		return getIndex(req), nil
 	}
 
 	if req.RouteKey == "GET /config.json" {
-		logMetric(req.RouteKey, 200)
+		internal.LogMetric(req.RouteKey, 200)
+		return getConfig(req), nil
+	}
+
+	if req.RouteKey == "GET /prometheus-export" {
+		internal.LogMetric(req.RouteKey, 200)
 		return getConfig(req), nil
 	}
 
@@ -74,7 +75,7 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 	if err != nil {
 		resp := http.CreateError("Incorrect hash address", 400)
 
-		logMetric(req.RouteKey, 400)
+		internal.LogMetric(req.RouteKey, 400)
 		return apigateway.HTTPToResp(resp), nil
 	}
 
@@ -91,36 +92,8 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 		httpResp = http.CreateError("Forbidden", 403)
 	}
 
-	logMetric(req.RouteKey, httpResp.StatusCode)
+	internal.LogMetric(req.RouteKey, httpResp.StatusCode)
 	return apigateway.HTTPToResp(httpResp), nil
-}
-
-/**
- * Increase metrics
- */
-func logMetric(path string, statusCode int) {
-	input := &dynamodb.UpdateItemInput{
-		ExpressionAttributeNames: map[string]*string{
-			"#hits": aws.String("hits"),
-		},
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":inc": {N: aws.String("1")},
-			":zero": {N: aws.String("0")},
-		},
-		TableName:        aws.String("prometheus"),
-		UpdateExpression: aws.String("SET #hits = if_not_exists(#hits, :zero) + :inc"),
-		Key: map[string]*dynamodb.AttributeValue{
-			"path_code": {S: aws.String(path + " " + strconv.Itoa(statusCode))},
-		},
-	}
-
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-	dyna := dynamodb.New(sess)
-
-	// Update logging
-	_, _ = dyna.UpdateItem(input)
 }
 
 func getIndex(_ events.APIGatewayV2HTTPRequest) *events.APIGatewayV2HTTPResponse {
