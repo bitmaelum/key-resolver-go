@@ -98,13 +98,13 @@ func HandleRequest(req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTP
 func logMetric(path string) {
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeNames: map[string]*string{
-			"#count": aws.String("count"),
+			"#hits": aws.String("hits"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":num": {N: aws.String("1")},
 		},
 		TableName:           aws.String("prometheus"),
-		UpdateExpression:    aws.String("SET count = count + :num"),
+		UpdateExpression:    aws.String("SET hits = hits + :num"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"path": {S: aws.String(path)},
 		},
