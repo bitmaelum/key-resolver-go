@@ -62,12 +62,12 @@ func ExportMetric() *events.APIGatewayV2HTTPResponse {
 	body += "# TYPE keyresolver_request counter\n"
 
 	input := &dynamodb.ScanInput{
-	    ExpressionAttributeNames: map[string]*string{
-	        "#path_code": aws.String("path_code"),
-	        "#hits": aws.String("hits"),
-	    },
-	    ProjectionExpression: aws.String("#path_code, #hits"),
-	    TableName:            aws.String("prometheus"),
+		ExpressionAttributeNames: map[string]*string{
+			"#path_code": aws.String("path_code"),
+			"#hits":      aws.String("hits"),
+		},
+		ProjectionExpression: aws.String("#path_code, #hits"),
+		TableName:            aws.String("prometheus"),
 	}
 
 	dyna := getDyna()

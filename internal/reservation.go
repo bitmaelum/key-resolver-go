@@ -34,6 +34,8 @@ import (
 // @TODO: Make this dynamic
 const baseReservedUrl = "https://resolver.bitmaelum.org/reserved/"
 
+var SkipReservationCheck = false
+
 func getDomainReservations(hash hash.Hash) ([]string, error) {
 	// call /reserved/<hash>
 	client := http.DefaultClient
@@ -70,6 +72,10 @@ func getDomainReservations(hash hash.Hash) ([]string, error) {
 }
 
 func CheckReservations(h hash.Hash, pk *bmcrypto.PubKey) bool {
+	if SkipReservationCheck {
+		return true
+	}
+
 	domains, err := getDomainReservations(h)
 	if err != nil {
 		// Error while fetching domains
