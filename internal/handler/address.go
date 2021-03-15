@@ -30,6 +30,7 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
+	"github.com/bitmaelum/key-resolver-go/internal"
 	"github.com/bitmaelum/key-resolver-go/internal/address"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 	"github.com/bitmaelum/key-resolver-go/internal/organisation"
@@ -100,6 +101,10 @@ func PostAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 	// Check org token
 	if uploadBody.OrgToken != "" && !validateOrgToken(uploadBody.OrgToken, addrHash, uploadBody.OrgHash, uploadBody.RoutingID) {
 		return http.CreateError("cannot validate organisation token", 400)
+	}
+
+	if !internal.CheckReservations(addrHash, uploadBody.PublicKey) {
+		return http.CreateError("reserved address", 400)
 	}
 
 	if current == nil {
