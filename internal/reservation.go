@@ -23,12 +23,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
-	"github.com/sirupsen/logrus"
 )
 
 // @TODO: Make this dynamic
@@ -53,13 +53,13 @@ func getDomainReservations(hash hash.Hash) ([]string, error) {
 	if response.StatusCode == 200 {
 		res, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			logrus.Debugf("cannot get body response from remote resolver: %s", err)
+			log.Printf("cannot get body response from remote resolver: %s", err)
 			return nil, errors.New("not found")
 		}
 
 		err = json.Unmarshal(res, &domains)
 		if err != nil {
-			logrus.Debugf("cannot unmarshal resolve body: %s", err)
+			log.Printf("cannot unmarshal resolve body: %s", err)
 			return nil, errors.New("not found")
 		}
 
