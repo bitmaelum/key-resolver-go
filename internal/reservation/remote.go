@@ -17,7 +17,7 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-package internal
+package reservation
 
 import (
 	"encoding/json"
@@ -31,19 +31,70 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 )
 
-// @TODO: Make this dynamic
-const baseReservedUrl = "https://resolver.bitmaelum.org/reserved/"
+// RemoteRepository allows you to fetch reservations from a remote server (the keyserver)
+type RemoteRepository struct {
+	c       *http.Client
+	baseUrl string
+}
 
-var SkipReservationCheck = false
+// NewRemoteRepository creates a new repository for fetching reservations through HTTP
+func NewRemoteRepository(baseUrl string, client *http.Client) ReservationRepository {
+	if client == nil {
+		client = http.DefaultClient
+	}
 
-func getDomainReservations(hash hash.Hash) ([]string, error) {
-	// call /reserved/<hash>
-	client := http.DefaultClient
-	url := baseReservedUrl + hash.String()
+	return &RemoteRepository{
+		c:       client,
+		baseUrl: baseUrl,
+	}
+}
+
+// IsValidated will check if a hash has a DNS entry with the correct value
+func (r RemoteRepository) IsValidated(h hash.Hash, pk *bmcrypto.PubKey) (bool, error) {
+	domains, err := r.GetDomains(h)
+	if err != nil {
+		return false, err
+	}
+
+	// Not reserved
+	if len(domains) == 0 {
+		return true, err
+	}
+
+	for _, domain := range domains {
+		entries, err := net.LookupTXT("_bitmaelum." + domain)
+		if err != nil {
+			continue
+		}
+
+		for _, entry := range entries {
+			if entry == pk.Fingerprint() {
+				return true, nil
+			}
+		}
+	}
+
+	// No domain found that verifies
+	return false, nil
+}
+
+// IsReserved will return true when the hash is a reserved hash
+func (r RemoteRepository) IsReserved(h hash.Hash) (bool, error) {
+	d, err := r.GetDomains(h)
+	if err != nil {
+		return false, err
+	}
+
+	return len(d) > 0, nil
+}
+
+// GetDomains will return the domains for the given reserved hash, or empty slice when not reserved
+func (r RemoteRepository) GetDomains(h hash.Hash) ([]string, error) {
+	url := r.baseUrl + h.String()
 
 	var domains = make([]string, 100)
 
-	response, err := client.Get(url)
+	response, err := r.c.Get(url)
 	if err != nil {
 		return nil, errors.New("not found")
 	}
@@ -69,37 +120,4 @@ func getDomainReservations(hash hash.Hash) ([]string, error) {
 	}
 
 	return nil, errors.New("not found")
-}
-
-func CheckReservations(h hash.Hash, pk *bmcrypto.PubKey) bool {
-	if SkipReservationCheck {
-		return true
-	}
-
-	domains, err := getDomainReservations(h)
-	if err != nil {
-		// Error while fetching domains
-		return false
-	}
-
-	// Not reserved
-	if len(domains) == 0 {
-		return true
-	}
-
-	for _, domain := range domains {
-		entries, err := net.LookupTXT("_bitmaelum." + domain)
-		if err != nil {
-			continue
-		}
-
-		for _, entry := range entries {
-			if entry == pk.Fingerprint() {
-				return true
-			}
-		}
-	}
-
-	// No domain found for verification
-	return false
 }

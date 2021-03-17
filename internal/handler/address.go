@@ -30,10 +30,10 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
-	"github.com/bitmaelum/key-resolver-go/internal"
 	"github.com/bitmaelum/key-resolver-go/internal/address"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 	"github.com/bitmaelum/key-resolver-go/internal/organisation"
+	"github.com/bitmaelum/key-resolver-go/internal/reservation"
 )
 
 type addressUploadBody struct {
@@ -103,7 +103,8 @@ func PostAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 		return http.CreateError("cannot validate organisation token", 400)
 	}
 
-	if !internal.CheckReservations(addrHash, uploadBody.PublicKey) {
+	ok, err := reservation.ReservationService.IsValidated(addrHash, uploadBody.PublicKey)
+	if !ok || err != nil {
 		return http.CreateError("reserved address", 400)
 	}
 

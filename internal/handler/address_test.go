@@ -29,10 +29,10 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/bmcrypto"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/hash"
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
-	"github.com/bitmaelum/key-resolver-go/internal"
 	"github.com/bitmaelum/key-resolver-go/internal/address"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 	"github.com/bitmaelum/key-resolver-go/internal/organisation"
+	"github.com/bitmaelum/key-resolver-go/internal/reservation"
 	"github.com/bitmaelum/key-resolver-go/internal/routing"
 	testing2 "github.com/bitmaelum/key-resolver-go/internal/testing"
 	"github.com/stretchr/testify/assert"
@@ -715,7 +715,7 @@ func TestHistory(t *testing.T) {
 
 func setupRepo() {
 	// NO reservation checks
-	internal.SkipReservationCheck = true
+	reservation.ReservationService = reservation.NewMockRepository()
 
 	sr := address.NewSqliteResolver(":memory:")
 	address.SetDefaultRepository(sr)
