@@ -199,7 +199,7 @@ func (r *dynamoDbResolver) SoftDelete(hash string) (bool, error) {
 			":df": {BOOL: aws.Bool(true)},
 		},
 		TableName:        aws.String(r.TableName),
-		UpdateExpression: aws.String("SET deleted=:df, deleted_at=:dt, serial=:sn"),
+		UpdateExpression: aws.String("SET deleted=:df, deleted_at=:dt, sn=:sn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},
 		},
@@ -224,7 +224,7 @@ func (r *dynamoDbResolver) SoftUndelete(hash string) (bool, error) {
 			":sn": {N: aws.String(serial)},
 		},
 		TableName:        aws.String(r.TableName),
-		UpdateExpression: aws.String("SET deleted=:df, deleted_at=:dt, serial=:sn"),
+		UpdateExpression: aws.String("SET deleted=:df, deleted_at=:dt, sn=:sn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},
 		},
