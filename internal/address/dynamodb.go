@@ -195,9 +195,11 @@ func (r *dynamoDbResolver) SoftDelete(hash string) (bool, error) {
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":dt": {N: aws.String(strconv.FormatInt(time.Now().Unix(), 10))},
+			":sn": {N: aws.String("0")},
+			":df": {BOOL: aws.Bool(true)},
 		},
 		TableName:        aws.String(r.TableName),
-		UpdateExpression: aws.String("SET deleted=1, deleted_at=:dt"),
+		UpdateExpression: aws.String("SET deleted=:df, deleted_at=:dt, serial=:sn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},
 		},
@@ -213,12 +215,16 @@ func (r *dynamoDbResolver) SoftDelete(hash string) (bool, error) {
 }
 
 func (r *dynamoDbResolver) SoftUndelete(hash string) (bool, error) {
+	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
+
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":dt": {N: aws.String("")},
+			":bf": {BOOL: aws.Bool(false)},
+			":sn": {N: aws.String(serial)},
 		},
 		TableName:        aws.String(r.TableName),
-		UpdateExpression: aws.String("SET deleted=0, deleted_at=:dt"),
+		UpdateExpression: aws.String("SET deleted=:df, deleted_at=:dt, serial=:sn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(hash)},
 		},
