@@ -160,17 +160,14 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		return nil, ErrNotFound
 	}
 
-	// We would prefer if we didn't retrieve it from the Getitem input
-	if record.Deleted {
-		return nil, ErrNotFound
-	}
-
 	return &ResolveInfoType{
 		Hash:      record.Hash,
 		RoutingID: record.Routing,
 		PubKey:    record.PublicKey,
 		Proof:     record.Proof,
 		Serial:    record.Serial,
+		Deleted:   record.Deleted,
+		DeletedAt: time.Unix(int64(record.DeletedAt), 0),
 	}, nil
 }
 
