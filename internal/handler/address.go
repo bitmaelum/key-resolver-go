@@ -149,7 +149,8 @@ func deleteAddressHashByOwner(addrHash hash.Hash, req http.Request) *http.Respon
 		return http.CreateError("error while fetching record", 500)
 	}
 
-	if current == nil {
+	if current == nil || current.Deleted {
+		log.Print(err)
 		return http.CreateError("cannot find record", 404)
 	}
 
@@ -180,7 +181,7 @@ func deleteAddressHashByOrganization(addrHash hash.Hash, organizationInfo *organ
 		return http.CreateError("error while fetching organization record", 500)
 	}
 
-	if currentAddress == nil {
+	if currentAddress == nil || currentAddress.Deleted {
 		return http.CreateError("cannot find address record", 404)
 	}
 
@@ -238,6 +239,10 @@ func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Respons
 
 	if current == nil {
 		return http.CreateError("cannot find record", 404)
+	}
+
+	if !current.Deleted {
+		return http.CreateError("not deleted", 400)
 	}
 
 	if !req.ValidateAuthenticationToken(current.PubKey, current.Hash+current.RoutingID+strconv.FormatUint(current.Serial, 10)) {
