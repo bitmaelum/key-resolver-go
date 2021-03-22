@@ -30,6 +30,7 @@ import (
 	"github.com/bitmaelum/bitmaelum-suite/pkg/proofofwork"
 	"github.com/bitmaelum/key-resolver-go/internal/http"
 	"github.com/bitmaelum/key-resolver-go/internal/organisation"
+	"github.com/bitmaelum/key-resolver-go/internal/reservation"
 )
 
 var (
@@ -142,6 +143,11 @@ func createOrganisation(orgHash hash.Hash, uploadBody organisationUploadBody) *h
 
 	if uploadBody.Proof.Bits < MinimumProofBitsOrganisation {
 		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", MinimumProofBitsAddress), 401)
+	}
+
+	ok, err := reservation.ReservationService.IsValidated(orgHash, uploadBody.PublicKey)
+	if !ok || err != nil {
+		return http.CreateError("reserved organisation but validation in DNS not found", 401)
 	}
 
 	repo := organisation.GetResolveRepository()
