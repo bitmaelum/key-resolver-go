@@ -103,7 +103,7 @@ func (r *SqliteDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubK
 
 	_ = r.updateKeyHistory(hash, publicKey.Fingerprint(), KSNormal)
 
-	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, 0, 0)", hash, publicKey.String(), routing, proof, serial)
+	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, ?, ?)", hash, publicKey.String(), routing, proof, serial, 0, 0)
 	if err != nil {
 		return false, err
 	}
@@ -125,7 +125,7 @@ func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		rt  string
 		pow string
 		sn  uint64
-		d   bool
+		d   int
 		da  int64
 	)
 
@@ -140,7 +140,7 @@ func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		PubKey:    pk,
 		Proof:     pow,
 		Serial:    sn,
-		Deleted:   d,
+		Deleted:   d == 1,
 		DeletedAt: time.Unix(da, 0),
 	}, nil
 }

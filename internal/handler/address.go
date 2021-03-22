@@ -87,11 +87,6 @@ func PostAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 		return http.CreateError("error while posting record", 500)
 	}
 
-	if current == nil || current.Deleted {
-		log.Print(err)
-		return http.CreateError("hash not found", 404)
-	}
-
 	uploadBody := &addressUploadBody{}
 	err = json.Unmarshal([]byte(req.Body), uploadBody)
 	if err != nil {

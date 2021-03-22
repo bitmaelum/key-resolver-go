@@ -43,11 +43,13 @@ var (
 )
 
 type addressInfoType = struct {
-	Hash         string `json:"hash"`
-	PublicKey    string `json:"public_key"`
-	Routing      string `json:"routing_id"`
-	Proof        string `json:"proof"`
-	SerialNumber uint64 `json:"serial_number"`
+	Hash         string    `json:"hash"`
+	PublicKey    string    `json:"public_key"`
+	Routing      string    `json:"routing_id"`
+	Proof        string    `json:"proof"`
+	SerialNumber uint64    `json:"serial_number"`
+	Deleted      bool      `json:"deleted"`
+	DeletedAt    time.Time `json:"deleted_at"`
 }
 
 func TestAddress(t *testing.T) {
@@ -780,5 +782,7 @@ func getAddressRecord(res *http.Response) address.ResolveInfoType {
 		PubKey:    tmp.PublicKey,
 		Proof:     tmp.Proof,
 		Serial:    tmp.SerialNumber,
+		Deleted:   tmp.Deleted,
+		DeletedAt: tmp.DeletedAt,
 	}
 }
