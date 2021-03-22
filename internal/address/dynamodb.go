@@ -216,8 +216,8 @@ func (r *dynamoDbResolver) SoftUndelete(hash string) (bool, error) {
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":dt": {N: aws.String("")},
-			":bf": {BOOL: aws.Bool(false)},
+			":dt": {NULL: aws.Bool(true)},
+			":df": {BOOL: aws.Bool(false)},
 			":sn": {N: aws.String(serial)},
 		},
 		TableName:        aws.String(r.TableName),
