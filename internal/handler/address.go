@@ -246,7 +246,7 @@ func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Respons
 		return http.CreateError("cannot find record", 404)
 	}
 
-	if current.Deleted == false {
+	if !current.Deleted {
 		return http.CreateError("not deleted", 400)
 	}
 
