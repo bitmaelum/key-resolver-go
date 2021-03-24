@@ -39,7 +39,7 @@ type addressUploadBody struct {
 	UserHash  hash.Hash                `json:"user_hash"`
 	OrgHash   hash.Hash                `json:"org_hash"`
 	PublicKey *bmcrypto.PubKey         `json:"public_key"`
-	RoutingID string                   `json:"routing_id"`
+	RoutingID string                   `json:"routing_id,omitempty"`
 	Proof     *proofofwork.ProofOfWork `json:"proof"`
 	RedirHash string                   `json:"redir_hash,omitempty"`
 }
