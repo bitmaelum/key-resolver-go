@@ -464,7 +464,6 @@ func updateAddressRecord(addr pkgAddress.Address, keyPath, routingId string, red
 	return nil
 }
 
-
 func insertAddressRecord(addr pkgAddress.Address, keyPath, routingId string, pow *proofofwork.ProofOfWork, redir string) *http.Response {
 	_, pubKey, err := testing2.ReadTestKey(keyPath)
 	if err != nil {
@@ -573,7 +572,6 @@ func TestDepth(t *testing.T) {
 	res = GetAddressHash(addr1.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
 
-
 	// Add new entry should not work with redir
 	resp := insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, addr4.Hash().String())
 	assert.Equal(t, 400, resp.StatusCode)
@@ -583,7 +581,6 @@ func TestDepth(t *testing.T) {
 	assert.Equal(t, 201, resp.StatusCode)
 	assert.Equal(t, "\"created\"", resp.Body)
 }
-
 
 // test depth
 func TestCyclic(t *testing.T) {
@@ -623,7 +620,6 @@ func TestCyclic(t *testing.T) {
 	res = GetAddressHash(addr2.Hash(), req)
 	assert.Equal(t, 400, res.StatusCode)
 	assert.Equal(t, "{\n  \"error\": \"cyclic dependency detected \"\n}", res.Body)
-
 
 	// Add new entry should not work with cyclic
 	resp := insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, addr4.Hash().String())

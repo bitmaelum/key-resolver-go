@@ -319,7 +319,7 @@ func validateRedirection(addrHash string) *http.Response {
 	}
 
 	// Test redirection on one level below, since we want to add a new entry on top.
-	_, err := recursiveGet(hash.Hash(addrHash), MaxRedirectDepth - 1)
+	_, err := recursiveGet(hash.Hash(addrHash), MaxRedirectDepth-1)
 	return err
 }
 

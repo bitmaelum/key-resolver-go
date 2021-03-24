@@ -236,7 +236,6 @@ func runRepositoryCreateUpdateTest(t *testing.T, db Repository) {
 	assert.Equal(t, pubkey2.String(), info.PubKey)
 	assert.Equal(t, "proof", info.Proof)
 
-
 	// Update with redir hash
 	info, _ = db.Get(h1.String())
 	ok, err = db.Update(info, "77772222", pubkey3, hash.New("foobar").String())
