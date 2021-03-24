@@ -602,6 +602,8 @@ func TestCyclic(t *testing.T) {
 	pow5 := proofofwork.New(MinimumProofBitsAddress, addr5.Hash().String(), 0)
 	pow5.WorkMulticore()
 
+	MaxRedirectDepth = 5
+
 	// Insert some records
 	insertAddressRecord(*addr4, "../../testdata/key-4.json", fakeRoutingId.String(), pow4, "")
 	insertAddressRecord(*addr2, "../../testdata/key-2.json", fakeRoutingId.String(), pow2, addr4.Hash().String())
