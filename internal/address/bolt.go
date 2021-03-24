@@ -65,7 +65,7 @@ func (b boltResolver) Get(hash string) (*ResolveInfoType, error) {
 	return rec, nil
 }
 
-func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
+func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string, redirHash string) (bool, error) {
 	err := b.client.Update(func(tx *bolt.Tx) error {
 		bucket, err := tx.CreateBucketIfNotExists(b.bucketName)
 		if err != nil {
@@ -74,6 +74,7 @@ func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, p
 
 		rec := &ResolveInfoType{
 			Hash:      hash,
+			RedirHash: redirHash,
 			RoutingID: routing,
 			PubKey:    publicKey.String(),
 			Proof:     proof,
@@ -111,7 +112,7 @@ func (b boltResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, p
 	return true, nil
 }
 
-func (b boltResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
+func (b boltResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey, redirHash string) (bool, error) {
 	err := b.client.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket(b.bucketName)
 		if bucket == nil {
@@ -129,6 +130,7 @@ func (b boltResolver) Update(info *ResolveInfoType, routing string, publicKey *b
 
 		rec.RoutingID = routing
 		rec.PubKey = publicKey.String()
+		rec.RedirHash = redirHash
 		buf, err := json.Marshal(rec)
 		if err != nil {
 			return err

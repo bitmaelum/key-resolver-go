@@ -57,7 +57,7 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	_, pub3, _ := testing2.ReadTestKey("../../testdata/key-3.json")
 	_, pub4, _ := testing2.ReadTestKey("../../testdata/key-4.json")
 
-	ok, err := db.Create(h1.String(), "12345678", pub1, "proof")
+	ok, err := db.Create(h1.String(), "12345678", pub1, "proof", "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
@@ -76,7 +76,7 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 
 	// update key
 	info, _ := db.Get(h1.String())
-	ok, err = db.Update(info, "12345678", pub2)
+	ok, err = db.Update(info, "12345678", pub2, "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
@@ -95,7 +95,7 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 	assert.Error(t, err)
 
 	// update key on other account
-	ok, err = db.Create(h2.String(), "12345678", pub3, "proof")
+	ok, err = db.Create(h2.String(), "12345678", pub3, "proof", "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
@@ -120,7 +120,7 @@ func runRepositoryHistoryCheck(t *testing.T, db Repository) {
 
 	// Update first key again
 	info, _ = db.Get(h1.String())
-	ok, err = db.Update(info, "12345678", pub4)
+	ok, err = db.Update(info, "12345678", pub4, "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
@@ -149,7 +149,7 @@ func runRepositoryHistoryKeyStatus(t *testing.T, db Repository) {
 	_, pub1, _ := testing2.ReadTestKey("../../testdata/key-1.json")
 	_, pub2, _ := testing2.ReadTestKey("../../testdata/key-2.json")
 
-	ok, err := db.Create(h1.String(), "12345678", pub1, "proof")
+	ok, err := db.Create(h1.String(), "12345678", pub1, "proof", "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
@@ -160,7 +160,7 @@ func runRepositoryHistoryKeyStatus(t *testing.T, db Repository) {
 
 	// Rotate key
 	info, _ := db.Get(h1.String())
-	ok, err = db.Update(info, "12345678", pub2)
+	ok, err = db.Update(info, "12345678", pub2, "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
@@ -183,11 +183,12 @@ func runRepositoryHistoryKeyStatus(t *testing.T, db Repository) {
 func runRepositoryCreateUpdateTest(t *testing.T, db Repository) {
 	h1 := hash.Hash("address1!")
 	h2 := hash.Hash("address2!")
+	h3 := hash.Hash("address3!")
 
 	_, pubkey, _ := bmcrypto.GenerateKeyPair("ed25519")
 
 	// Create key
-	ok, err := db.Create(h1.String(), "12345678", pubkey, "proof")
+	ok, err := db.Create(h1.String(), "12345678", pubkey, "proof", "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
@@ -207,7 +208,7 @@ func runRepositoryCreateUpdateTest(t *testing.T, db Repository) {
 	_, pubkey2, _ := bmcrypto.GenerateKeyPair("ed25519")
 
 	// Update info
-	ok, err = db.Update(info, "11112222", pubkey2)
+	ok, err = db.Update(info, "11112222", pubkey2, "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
@@ -223,7 +224,7 @@ func runRepositoryCreateUpdateTest(t *testing.T, db Repository) {
 
 	// Try and update with incorrect serial number
 	info.Serial = 1234
-	ok, err = db.Update(info, "88881111", pubkey3)
+	ok, err = db.Update(info, "88881111", pubkey3, "")
 	assert.False(t, ok)
 	assert.Error(t, err)
 
@@ -234,6 +235,35 @@ func runRepositoryCreateUpdateTest(t *testing.T, db Repository) {
 	assert.Equal(t, h1.String(), info.Hash)
 	assert.Equal(t, pubkey2.String(), info.PubKey)
 	assert.Equal(t, "proof", info.Proof)
+
+
+	// Update with redir hash
+	info, _ = db.Get(h1.String())
+	ok, err = db.Update(info, "77772222", pubkey3, hash.New("foobar").String())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Read back unmodified info
+	info, err = db.Get(h1.String())
+	assert.NoError(t, err)
+	assert.Equal(t, "77772222", info.RoutingID)
+	assert.Equal(t, h1.String(), info.Hash)
+	assert.Equal(t, hash.New("foobar").String(), info.RedirHash)
+	assert.Equal(t, pubkey3.String(), info.PubKey)
+
+	// Create with redir hash
+	ok, err = db.Create(h3.String(), "12345678", pubkey, "proof", hash.New("dest").String())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	// Fetch created hash
+	info, err = db.Get(h3.String())
+	assert.NoError(t, err)
+	assert.Equal(t, "12345678", info.RoutingID)
+	assert.Equal(t, h3.String(), info.Hash)
+	assert.Equal(t, hash.New("dest").String(), info.RedirHash)
+	assert.Equal(t, pubkey.String(), info.PubKey)
+	assert.Equal(t, "proof", info.Proof)
 }
 
 func runRepositoryDeletionTests(t *testing.T, db Repository) {
@@ -243,7 +273,7 @@ func runRepositoryDeletionTests(t *testing.T, db Repository) {
 	_, pubkey, _ := bmcrypto.GenerateKeyPair("ed25519")
 
 	// Create key
-	ok, err := db.Create(h1.String(), "12345678", pubkey, "proof")
+	ok, err := db.Create(h1.String(), "12345678", pubkey, "proof", "")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 

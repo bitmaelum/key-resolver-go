@@ -128,13 +128,48 @@ func TestCreate(t *testing.T) {
 		"public_key": {S: aws.String("ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=")},
 		"routing":    {S: aws.String("12345678")},
 		"sn":         {N: aws.String("1273494896000000000")},
+		"redir_hash": {NULL: aws.Bool(true)},
 		"deleted_at": {N: aws.String("0")},
 		"deleted":    {BOOL: aws.Bool(false)},
 	}
 	mock.ExpectPutItem().ToTable("mock_address_table").WithItems(items).WillReturns(dynamodb.PutItemOutput{})
 
 	pubkey, _ := bmcrypto.NewPubKey("ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=")
-	ok, err := resolver.Create("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2", "12345678", pubkey, "proof")
+	ok, err := resolver.Create("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2", "12345678", pubkey, "proof", "")
+	assert.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func TestCreateWithRedir(t *testing.T) {
+	var client dynamodbiface.DynamoDBAPI
+	client, mock = dynamock.New()
+	resolver := NewDynamoDBResolver(client, "mock_address_table", "mock_history_table")
+
+	TimeNow = func() time.Time {
+		return time.Date(2010, 05, 10, 12, 34, 56, 0, time.UTC)
+	}
+
+	historyItems := map[string]*dynamodb.AttributeValue{
+		"hash":        {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
+		"fingerprint": {S: aws.String("b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758")},
+		"status":      {N: aws.String(fmt.Sprintf("%d", KSNormal))},
+	}
+	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(historyItems).WillReturns(dynamodb.PutItemOutput{})
+
+	items := map[string]*dynamodb.AttributeValue{
+		"hash":       {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
+		"proof":      {S: aws.String("proof")},
+		"public_key": {S: aws.String("ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=")},
+		"routing":    {S: aws.String("12345678")},
+		"sn":         {N: aws.String("1273494896000000000")},
+		"redir_hash": {S: aws.String("foobar")},
+		"deleted_at": {N: aws.String("0")},
+		"deleted":    {BOOL: aws.Bool(false)},
+	}
+	mock.ExpectPutItem().ToTable("mock_address_table").WithItems(items).WillReturns(dynamodb.PutItemOutput{})
+
+	pubkey, _ := bmcrypto.NewPubKey("ed25519 MCowBQYDK2VwAyEAS2/hs2jf0QJgpuNklMnN/A7EHj26DDpRfvcZyettOjU=")
+	ok, err := resolver.Create("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2", "12345678", pubkey, "proof", "foobar")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 }
@@ -167,7 +202,7 @@ func TestUpdate(t *testing.T) {
 		Proof:     "proof",
 		Serial:    1273494896000000000,
 	}
-	ok, err := resolver.Update(info, "555555555", pubkey)
+	ok, err := resolver.Update(info, "555555555", pubkey, "fooobarhash")
 	assert.NoError(t, err)
 	assert.True(t, ok)
 }
