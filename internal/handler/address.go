@@ -62,15 +62,17 @@ func GetAddressHash(hash hash.Hash, _ http.Request) *http.Response {
 
 	data := http.RawJSONOut{
 		"hash":          info.Hash,
-		"routing_id":    info.RoutingID,
 		"public_key":    info.PubKey,
 		"serial_number": info.Serial,
 		"proof":         info.Proof,
 	}
 
-	// Add redirect hash if available
+	// Add optional items
 	if info.RedirHash != "" {
 		data["redirect_hash"] = info.RedirHash
+	}
+	if info.RoutingID != "" {
+		data["routing_id"] = info.RoutingID
 	}
 
 	return http.CreateOutput(data, 200)
