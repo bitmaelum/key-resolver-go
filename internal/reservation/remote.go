@@ -52,6 +52,8 @@ func NewRemoteRepository(baseUrl string, client *http.Client) ReservationReposit
 // IsValidated will check if a hash has a DNS entry with the correct value
 func (r RemoteRepository) IsValidated(h hash.Hash, pk *bmcrypto.PubKey) (bool, error) {
 	domains, err := r.GetDomains(h)
+	log.Printf("domains: %#v", domains)
+	log.Printf("err: %#v", err)
 	if err != nil {
 		return false, err
 	}
