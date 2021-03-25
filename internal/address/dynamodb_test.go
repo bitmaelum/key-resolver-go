@@ -149,9 +149,8 @@ func TestCreateWithRedir(t *testing.T) {
 	}
 
 	historyItems := map[string]*dynamodb.AttributeValue{
-		"hash":        {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
-		"fingerprint": {S: aws.String("b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758")},
-		"status":      {N: aws.String(fmt.Sprintf("%d", KSNormal))},
+		"hash_fingerprint": {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758")},
+		"status":           {N: aws.String(fmt.Sprintf("%d", KSNormal))},
 	}
 	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(historyItems).WillReturns(dynamodb.PutItemOutput{})
 
