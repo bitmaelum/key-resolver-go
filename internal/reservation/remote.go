@@ -58,7 +58,7 @@ func (r RemoteRepository) IsValidated(h hash.Hash, pk *bmcrypto.PubKey) (bool, e
 		return false, err
 	}
 
-	fmt.Println("Is Validated: domain count: ", d)
+	fmt.Println("Is Validated: domain count: ", domains)
 
 	// Not reserved
 	if len(domains) == 0 {
