@@ -98,28 +98,36 @@ func (r RemoteRepository) GetDomains(h hash.Hash) ([]string, error) {
 
 	response, err := r.c.Get(url)
 	if err != nil {
+		log.Print("cant fetch url: ", url)
+		log.Print(err)
 		return nil, errors.New("not found")
 	}
+	log.Print(response.StatusCode)
 
 	if response.StatusCode == 404 {
+		log.Print("status code 404: ")
 		return nil, errors.New("not found")
 	}
 
 	if response.StatusCode == 200 {
 		res, err := ioutil.ReadAll(response.Body)
+		log.Print(res)
 		if err != nil {
 			log.Printf("cannot get body response from remote resolver: %s", err)
 			return nil, errors.New("not found")
 		}
 
 		err = json.Unmarshal(res, &domains)
+		log.Print(err)
 		if err != nil {
 			log.Printf("cannot unmarshal resolve body: %s", err)
 			return nil, errors.New("not found")
 		}
 
+		log.Print(domains)
 		return domains, nil
 	}
 
+	log.Print("all fallthrough")
 	return nil, errors.New("not found")
 }
