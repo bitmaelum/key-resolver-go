@@ -30,6 +30,6 @@ type ReservationRepository interface {
 	GetDomains(h hash.Hash) ([]string, error)
 }
 
-const baseReservedUrl = "https://resolver.bitmaelum.org/reserved/"
+const baseReservedUrl = "https://resolver.bitmaelum.com/reserved/"
 
 var ReservationService = NewRemoteRepository(baseReservedUrl, nil)
