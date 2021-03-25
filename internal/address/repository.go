@@ -32,6 +32,7 @@ import (
 // ResolveInfoType returns information found in the resolver repository
 type ResolveInfoType struct {
 	Hash      string
+	RedirHash string
 	RoutingID string
 	PubKey    string
 	Proof     string
@@ -71,9 +72,9 @@ type Repository interface {
 	// Retrieve from hash
 	Get(hash string) (*ResolveInfoType, error)
 	// Create a new entry
-	Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error)
+	Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string, redirHash string) (bool, error)
 	// Update an existing entry
-	Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error)
+	Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey, redirHash string) (bool, error)
 	// Softdelete an entry
 	SoftDelete(hash string) (bool, error)
 	// Undelete a softdeleted entry

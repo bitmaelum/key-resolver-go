@@ -47,6 +47,7 @@ var (
 // record holds a DynamoDB record
 type recordType struct {
 	Hash      string `dynamodbav:"hash"`
+	RedirHash string `dynamodbav:"redir_hash"`
 	Routing   string `dynamodbav:"routing"`
 	PublicKey string `dynamodbav:"public_key"`
 	Proof     string `dynamodbav:"proof"`
@@ -70,18 +71,19 @@ func NewDynamoDBResolver(client dynamodbiface.DynamoDBAPI, tableName, historyTab
 	}
 }
 
-func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
+func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey, redirHash string) (bool, error) {
 	serial := strconv.FormatUint(uint64(time.Now().UnixNano()), 10)
 
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":rh":  {S: aws.String(redirHash)},
 			":s":   {S: aws.String(routing)},
 			":pk":  {S: aws.String(publicKey.String())},
 			":sn":  {N: aws.String(serial)},
 			":csn": {N: aws.String(strconv.FormatUint(info.Serial, 10))},
 		},
 		TableName:           aws.String(r.TableName),
-		UpdateExpression:    aws.String("SET routing=:s, public_key=:pk, sn=:sn"),
+		UpdateExpression:    aws.String("SET routing=:s, public_key=:pk, sn=:sn, redir_hash=:rh"),
 		ConditionExpression: aws.String("sn = :csn"),
 		Key: map[string]*dynamodb.AttributeValue{
 			"hash": {S: aws.String(info.Hash)},
@@ -104,9 +106,10 @@ func (r *dynamoDbResolver) Update(info *ResolveInfoType, routing string, publicK
 	return true, nil
 }
 
-func (r *dynamoDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
+func (r *dynamoDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof, redirHash string) (bool, error) {
 	record := recordType{
 		Hash:      hash,
+		RedirHash: redirHash,
 		Routing:   routing,
 		PublicKey: publicKey.String(),
 		Proof:     proof,
@@ -162,6 +165,7 @@ func (r *dynamoDbResolver) Get(hash string) (*ResolveInfoType, error) {
 
 	return &ResolveInfoType{
 		Hash:      record.Hash,
+		RedirHash: record.RedirHash,
 		RoutingID: record.Routing,
 		PubKey:    record.PublicKey,
 		Proof:     record.Proof,

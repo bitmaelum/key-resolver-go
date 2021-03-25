@@ -72,27 +72,27 @@ func TestAddress(t *testing.T) {
 
 	// Insert with illegal proof-of-work
 	pow2 := proofofwork.New(22, "somethingelse", 4231918)
-	res = insertAddressRecord(*addr, "../../testdata/key-3.json", fakeRoutingId.String(), "", pow2)
+	res = insertAddressRecord(*addr, "../../testdata/key-3.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
 	assert.Equal(t, 401, res.StatusCode)
 	assert.Contains(t, res.Body, "incorrect proof-of-work")
 
 	// Insert with incorrect proof-of-work
 	pow2 = proofofwork.New(22, "somethingelse", 1111111)
-	res = insertAddressRecord(*addr, "../../testdata/key-3.json", fakeRoutingId.String(), "", pow2)
+	res = insertAddressRecord(*addr, "../../testdata/key-3.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
 	assert.Equal(t, 401, res.StatusCode)
 	assert.Contains(t, res.Body, "incorrect proof-of-work")
 
 	// Insert with too small proof of work
-	pow2 = proofofwork.New(5, addr.Hash().String(), 16)
-	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
+	pow2 = proofofwork.New(3, addr.Hash().String(), 16)
+	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
 	assert.Equal(t, 401, res.StatusCode)
-	assert.Contains(t, res.Body, "proof-of-work too weak (need 22 bits)")
+	assert.Contains(t, res.Body, "proof-of-work too weak (need 5 bits)")
 
 	// Insert new hash
-	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow)
+	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), pow, "")
 	assert.NotNil(t, res)
 	assert.Equal(t, 201, res.StatusCode)
 	assert.Equal(t, `"created"`, res.Body)
@@ -119,7 +119,6 @@ func TestValidateVerifyHashFailed(t *testing.T) {
 	b, _ := json.Marshal(addressUploadBody{
 		UserHash:  "bar",
 		OrgHash:   "foo",
-		OrgToken:  "",
 		PublicKey: pubKey,
 		RoutingID: "12345",
 		Proof:     pow,
@@ -129,55 +128,7 @@ func TestValidateVerifyHashFailed(t *testing.T) {
 	res := PostAddressHash(addr.Hash(), req)
 	assert.NotNil(t, res)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "invalid data")
-}
-
-func TestValidateVerifyNeedTokenForOrg(t *testing.T) {
-	setupRepo()
-
-	_, pubKey, _ := testing2.ReadTestKey("../../testdata/key-3.json")
-
-	addr, _ := pkgAddress.NewAddress("foo@bar!")
-	pow := proofofwork.New(22, addr.Hash().String(), 2021455)
-
-	b, _ := json.Marshal(addressUploadBody{
-		UserHash:  addr.LocalHash(),
-		OrgHash:   addr.OrgHash(),
-		OrgToken:  "",
-		PublicKey: pubKey,
-		RoutingID: "12345",
-		Proof:     pow,
-	})
-
-	req := http.NewRequest("GET", "/", string(b), nil)
-	res := PostAddressHash(addr.Hash(), req)
-	assert.NotNil(t, res)
-	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "invalid data")
-}
-
-func TestValidateVerifyNoTokenForNonOrg(t *testing.T) {
-	setupRepo()
-
-	_, pubKey, _ := testing2.ReadTestKey("../../testdata/key-3.json")
-
-	addr, _ := pkgAddress.NewAddress("example!")
-	pow := proofofwork.New(22, addr.Hash().String(), 1540921)
-
-	b, _ := json.Marshal(addressUploadBody{
-		UserHash:  addr.LocalHash(),
-		OrgHash:   addr.OrgHash(),
-		OrgToken:  "foobartoken",
-		PublicKey: pubKey,
-		RoutingID: "12345",
-		Proof:     pow,
-	})
-
-	req := http.NewRequest("GET", "/", string(b), nil)
-	res := PostAddressHash(addr.Hash(), req)
-	assert.NotNil(t, res)
-	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "invalid data")
+	assert.Contains(t, res.Body, "hash verification failed")
 }
 
 func TestValidateRoutingIDFailed(t *testing.T) {
@@ -191,7 +142,6 @@ func TestValidateRoutingIDFailed(t *testing.T) {
 	b, _ := json.Marshal(addressUploadBody{
 		UserHash:  addr.LocalHash(),
 		OrgHash:   addr.OrgHash(),
-		OrgToken:  "",
 		PublicKey: pubKey,
 		RoutingID: "incorrect-routing-id",
 		Proof:     pow,
@@ -201,7 +151,7 @@ func TestValidateRoutingIDFailed(t *testing.T) {
 	res := PostAddressHash(addr.Hash(), req)
 	assert.NotNil(t, res)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "invalid data")
+	assert.Contains(t, res.Body, "invalid routing id")
 }
 
 func TestAddressUpdate(t *testing.T) {
@@ -214,9 +164,9 @@ func TestAddressUpdate(t *testing.T) {
 	pow2 := proofofwork.New(22, addr2.Hash().String(), 1019732)
 
 	// Insert some records
-	res := insertAddressRecord(*addr1, "../../testdata/key-3.json", fakeRoutingId.String(), "", pow1)
+	res := insertAddressRecord(*addr1, "../../testdata/key-3.json", fakeRoutingId.String(), pow1, "")
 	assert.NotNil(t, res)
-	res = insertAddressRecord(*addr2, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
+	res = insertAddressRecord(*addr2, "../../testdata/key-4.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
 
 	// Fetch addr1 record
@@ -232,7 +182,6 @@ func TestAddressUpdate(t *testing.T) {
 	body := &addressUploadBody{
 		UserHash:  addr1.LocalHash(),
 		OrgHash:   addr1.OrgHash(),
-		OrgToken:  "",
 		PublicKey: pk,
 		RoutingID: hash.New("some other routing id").String(),
 		Proof:     pow,
@@ -277,9 +226,9 @@ func TestAddressDeletion(t *testing.T) {
 	pow2 := proofofwork.New(22, addr2.Hash().String(), 1019732)
 
 	// Insert some records
-	res := insertAddressRecord(*addr1, "../../testdata/key-3.json", fakeRoutingId.String(), "", pow1)
+	res := insertAddressRecord(*addr1, "../../testdata/key-3.json", fakeRoutingId.String(), pow1, "")
 	assert.NotNil(t, res)
-	res = insertAddressRecord(*addr2, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
+	res = insertAddressRecord(*addr2, "../../testdata/key-4.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
 
 	// Delete hash without auth
@@ -338,9 +287,9 @@ func TestAddressSoftDeletion(t *testing.T) {
 	pow2 := proofofwork.New(22, addr2.Hash().String(), 1019732)
 
 	// Insert some records
-	res := insertAddressRecord(*addr1, "../../testdata/key-3.json", fakeRoutingId.String(), "", pow1)
+	res := insertAddressRecord(*addr1, "../../testdata/key-3.json", fakeRoutingId.String(), pow1, "")
 	assert.NotNil(t, res)
-	res = insertAddressRecord(*addr2, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
+	res = insertAddressRecord(*addr2, "../../testdata/key-4.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
 
 	// Delete hash without auth
@@ -401,254 +350,6 @@ func TestAddressSoftDeletion(t *testing.T) {
 	assert.Equal(t, 200, res.StatusCode)
 }
 
-func TestAddOrganisationalAddresses(t *testing.T) {
-	setupRepo()
-
-	// Add organisation
-	orgHash1 := hash.New("acme-inc")
-	pow1 := proofofwork.New(22, orgHash1.String(), 1305874)
-	_ = insertOrganisationRecord(orgHash1, "../../testdata/key-5.json", pow1, []string{})
-
-	addr, _ := pkgAddress.NewAddress("example@acme-inc!")
-	pow2 := proofofwork.New(22, addr.Hash().String(), 11741366)
-
-	// Add address without token
-	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow2)
-	assert.NotNil(t, res)
-	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "need org token when creating")
-
-	// Add address with wrong token
-	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "foobar", pow2)
-	assert.NotNil(t, res)
-	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "cannot validate organisation token")
-
-	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-5.json")
-	inviteToken := address.GenerateToken(addr.Hash(), fakeRoutingId.String(), time.Date(2010, 05, 05, 12, 0, 0, 0, time.UTC), *privKey)
-
-	// Add address with incorrect routing id
-	res = insertAddressRecord(*addr, "../../testdata/key-4.json", "incorrect-rout", inviteToken, pow2)
-	assert.NotNil(t, res)
-	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "invalid data")
-
-	// Add incorrect addr
-	addr2, _ := pkgAddress.NewAddress("someone-else@acme-inc!")
-	res = insertAddressRecord(*addr2, "../../testdata/key-4.json", fakeRoutingId.String(), inviteToken, pow2)
-	assert.NotNil(t, res)
-	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "cannot validate organisation token")
-
-	// After expiry
-	setRepoTime(time.Date(2010, 06, 06, 12, 0, 0, 0, time.UTC))
-	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), inviteToken, pow2)
-	assert.NotNil(t, res)
-	assert.Equal(t, 400, res.StatusCode)
-	assert.Contains(t, res.Body, "cannot validate organisation token")
-
-	// All good
-	setRepoTime(time.Date(2010, 04, 07, 12, 34, 56, 0, time.UTC))
-	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), inviteToken, pow2)
-	assert.NotNil(t, res)
-	assert.Equal(t, 201, res.StatusCode)
-	assert.Contains(t, res.Body, "created")
-
-	// Check if record exists
-	req := http.NewRequest("GET", "/", "", nil)
-	res = GetAddressHash(addr.Hash(), req)
-	assert.Equal(t, 200, res.StatusCode)
-	info := getAddressRecord(res)
-	assert.Equal(t, "466ad1d6bc0657e22f048ebcbfbf6f7731b699fc0a895668e5447df5936e3460", info.Hash)
-	assert.Equal(t, "ed25519 MCowBQYDK2VwAyEA0zlS1exf5ZbxneUfQHbiiwPkDOJoXlkAQolRRGD1K4g=", info.PubKey)
-	assert.Equal(t, "f5c62bf28bb19b66d67d869acb7255168fe54413442dae0c5bdd626b8eac927e", info.RoutingID)
-	assert.Equal(t, uint64(1270643696000000000), info.Serial)
-}
-
-func TestAllowUpdateToOrgAddressWithoutToken(t *testing.T) {
-	setupRepo()
-
-	// Add organisation
-	orgHash1 := hash.New("acme-inc")
-	pow1 := proofofwork.New(22, orgHash1.String(), 1305874)
-	_ = insertOrganisationRecord(orgHash1, "../../testdata/key-5.json", pow1, []string{})
-
-	addr, _ := pkgAddress.NewAddress("example@acme-inc!")
-	pow2 := proofofwork.New(22, addr.Hash().String(), 11741366)
-
-	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-5.json")
-	inviteToken := address.GenerateToken(addr.Hash(), fakeRoutingId.String(), time.Date(2010, 05, 05, 12, 0, 0, 0, time.UTC), *privKey)
-
-	// Add address with token
-	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), inviteToken, pow2)
-	assert.NotNil(t, res)
-	assert.Equal(t, 201, res.StatusCode)
-
-	privKey, pubKey, err := testing2.ReadTestKey("../../testdata/key-4.json")
-	assert.NoError(t, err)
-
-	// Update record with without org token
-	body := &addressUploadBody{
-		UserHash:  addr.LocalHash(),
-		OrgHash:   addr.OrgHash(),
-		OrgToken:  "",
-		PublicKey: pubKey,
-		RoutingID: hash.New("some other routing id").String(),
-		Proof:     pow2,
-	}
-	b, err := json.Marshal(body)
-	assert.NoError(t, err)
-
-	// Get serial
-	req := http.NewRequest("GET", "/", "", nil)
-	res = GetAddressHash(addr.Hash(), req)
-	assert.Equal(t, 200, res.StatusCode)
-	info := getAddressRecord(res)
-
-	sig := addr.Hash().String() + info.RoutingID + strconv.FormatUint(info.Serial, 10)
-	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
-
-	req = http.NewRequest("POST", "/account/"+addr.Hash().String(), string(b), nil)
-	req.Headers.Set("authorization", "BEARER "+authToken)
-	res = PostAddressHash(addr.Hash(), req)
-	assert.Equal(t, "\"updated\"", res.Body)
-	assert.Equal(t, 200, res.StatusCode)
-}
-
-func TestDeleteOrganisationalAddresses(t *testing.T) {
-	setupRepo()
-
-	// Add organisation
-	orgHash1 := hash.New("acme-inc")
-	pow1 := proofofwork.New(22, orgHash1.String(), 1305874)
-	_ = insertOrganisationRecord(orgHash1, "../../testdata/key-5.json", pow1, []string{})
-
-	orgHash2 := hash.New("example")
-	pow2 := proofofwork.New(22, orgHash2.String(), 190734)
-	_ = insertOrganisationRecord(orgHash2, "../../testdata/key-6.json", pow2, []string{})
-
-	orgHash3 := hash.New("another")
-	pow3 := proofofwork.New(22, orgHash3.String(), 21232)
-	_ = insertOrganisationRecord(orgHash3, "../../testdata/key-7.json", pow3, []string{})
-
-	addr, _ := pkgAddress.NewAddress("example@acme-inc!")
-	pow4 := proofofwork.New(22, addr.Hash().String(), 11741366)
-
-	insertRecords := func() {
-		privKey, _, _ := testing2.ReadTestKey("../../testdata/key-5.json")
-		inviteToken := address.GenerateToken(addr.Hash(), fakeRoutingId.String(), time.Date(2010, 05, 05, 12, 0, 0, 0, time.UTC), *privKey)
-
-		res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), inviteToken, pow4)
-		assert.NotNil(t, res)
-		assert.Equal(t, 201, res.StatusCode)
-		assert.Contains(t, res.Body, "created")
-
-		// Check if record exists
-		req := http.NewRequest("GET", "/", "", nil)
-		res = GetAddressHash(addr.Hash(), req)
-		assert.Equal(t, 200, res.StatusCode)
-	}
-
-	// Delete as regular user
-
-	insertRecords()
-
-	// Fetch addr record
-	req := http.NewRequest("GET", "/", "", nil)
-	res := GetAddressHash(addr.Hash(), req)
-	assert.Equal(t, 200, res.StatusCode)
-	current := getAddressRecord(res)
-
-	// Create authentication token
-	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-4.json")
-	sig := current.Hash + current.RoutingID + strconv.FormatUint(current.Serial, 10)
-	authToken := http.GenerateAuthenticationToken([]byte(sig), *privKey)
-
-	// Delete as "regular" user
-	req = http.NewRequest("GET", "/", "", nil)
-	// req.Headers.Set("authorization", "BEARER 2UxSWVAUJ/iIr59x76B9bF/CeQXDi4dTY4D73P8iJwE/CRaIpRyg1RHMbfLVM6fz3sfOammn8wzhooxfv6BVAg==")
-	req.Headers.Set("authorization", "BEARER "+authToken)
-	res = DeleteAddressHash(addr.Hash(), req)
-	assert.Equal(t, 200, res.StatusCode)
-
-	req = http.NewRequest("GET", "/", "", nil)
-	res = GetAddressHash(addr.Hash(), req)
-	assert.Equal(t, 404, res.StatusCode)
-
-	// Delete by organisation key, but without body
-
-	insertRecords()
-
-	// Create authentication token
-	privKey, _, _ = testing2.ReadTestKey("../../testdata/key-5.json")
-	sig = addr.Hash().String() + strconv.FormatUint(current.Serial, 10)
-	authToken = http.GenerateAuthenticationToken([]byte(sig), *privKey)
-
-	// Delete as correct "organisation" user, but without body
-	req = http.NewRequest("GET", "/", "", nil)
-	req.Headers.Set("authorization", "BEARER "+authToken)
-	res = DeleteAddressHash(addr.Hash(), req)
-	assert.Equal(t, 401, res.StatusCode)
-
-	req = http.NewRequest("GET", "/", "", nil)
-	res = GetAddressHash(addr.Hash(), req)
-	assert.Equal(t, 200, res.StatusCode)
-
-	// Delete by organisation key, with incorrect body
-
-	ob := &organizationRequestBody{
-		UserHash:         addr.LocalHash(),
-		OrganizationHash: orgHash2,
-	}
-	b, _ := json.Marshal(ob)
-
-	req = http.NewRequest("GET", "/", string(b), nil)
-	req.Headers.Set("authorization", "BEARER "+authToken)
-	res = DeleteAddressHash(addr.Hash(), req)
-	assert.Equal(t, 401, res.StatusCode)
-	assert.Contains(t, res.Body, "error validating address")
-
-	req = http.NewRequest("GET", "/", "", nil)
-	res = GetAddressHash(addr.Hash(), req)
-	assert.Equal(t, 200, res.StatusCode)
-
-	// Delete by organisation key, with correct body
-
-	ob = &organizationRequestBody{
-		UserHash:         addr.LocalHash(),
-		OrganizationHash: addr.OrgHash(),
-	}
-	b, _ = json.Marshal(ob)
-
-	req = http.NewRequest("GET", "/", string(b), nil)
-	req.Headers.Set("authorization", "BEARER "+authToken)
-	res = DeleteAddressHash(addr.Hash(), req)
-	assert.Equal(t, 200, res.StatusCode)
-
-	req = http.NewRequest("GET", "/", "", nil)
-	res = GetAddressHash(addr.Hash(), req)
-	assert.Equal(t, 404, res.StatusCode)
-
-	// Delete with auth token for org2
-
-	// Create authentication token for ORG2
-	privKey, _, _ = testing2.ReadTestKey("../../testdata/key-6.json")
-	sig = addr.Hash().String() + strconv.FormatUint(current.Serial, 10)
-	authToken = http.GenerateAuthenticationToken([]byte(sig), *privKey)
-
-	// Delete as incorrect "other organisation" user
-	insertRecords()
-
-	req = http.NewRequest("GET", "/", "", nil)
-	req.Headers.Set("authorization", "BEARER "+authToken)
-	res = DeleteAddressHash(addr.Hash(), req)
-	assert.Equal(t, 401, res.StatusCode)
-
-	req = http.NewRequest("GET", "/", "", nil)
-	res = GetAddressHash(addr.Hash(), req)
-	assert.Equal(t, 200, res.StatusCode)
-}
-
 func TestHistory(t *testing.T) {
 	setupRepo()
 
@@ -660,7 +361,7 @@ func TestHistory(t *testing.T) {
 	_, pub2, _ := testing2.ReadTestKey("../../testdata/key-3.json")
 
 	// Insert new hash
-	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), "", pow)
+	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), pow, "")
 	assert.NotNil(t, res)
 	assert.Equal(t, 201, res.StatusCode)
 	assert.Equal(t, `"created"`, res.Body)
@@ -731,8 +432,8 @@ func setupRepo() {
 	setRepoTime(time.Date(2010, 04, 07, 12, 34, 56, 0, time.UTC))
 
 	// Decrease number of bits for testing purposes
-	MinimumProofBitsAddress = 22
-	MinimumProofBitsOrganisation = 22
+	MinimumProofBitsAddress = 5
+	MinimumProofBitsOrganisation = 5
 }
 
 func setRepoTime(t time.Time) {
@@ -750,7 +451,20 @@ func setRepoTime(t time.Time) {
 	}
 }
 
-func insertAddressRecord(addr pkgAddress.Address, keyPath, routingId, orgToken string, pow *proofofwork.ProofOfWork) *http.Response {
+func updateAddressRecord(addr pkgAddress.Address, keyPath, routingId string, redir string) *http.Response {
+	_, pubKey, _ := testing2.ReadTestKey(keyPath)
+
+	req := http.NewRequest("GET", "/", "", nil)
+	res := GetAddressHash(addr.Hash(), req)
+	info := getAddressRecord(res)
+
+	repo := address.GetResolveRepository()
+	_, _ = repo.Update(&info, routingId, pubKey, redir)
+
+	return nil
+}
+
+func insertAddressRecord(addr pkgAddress.Address, keyPath, routingId string, pow *proofofwork.ProofOfWork, redir string) *http.Response {
 	_, pubKey, err := testing2.ReadTestKey(keyPath)
 	if err != nil {
 		return nil
@@ -759,7 +473,7 @@ func insertAddressRecord(addr pkgAddress.Address, keyPath, routingId, orgToken s
 	b, err := json.Marshal(addressUploadBody{
 		UserHash:  addr.LocalHash(),
 		OrgHash:   addr.OrgHash(),
-		OrgToken:  orgToken,
+		RedirHash: redir,
 		PublicKey: pubKey,
 		RoutingID: routingId,
 		Proof:     pow,
@@ -785,4 +499,136 @@ func getAddressRecord(res *http.Response) address.ResolveInfoType {
 		Deleted:   tmp.Deleted,
 		DeletedAt: tmp.DeletedAt,
 	}
+}
+
+func TestRedirections(t *testing.T) {
+	setupRepo()
+
+	addr1, _ := pkgAddress.NewAddress("aaa!")
+	pow1 := proofofwork.New(MinimumProofBitsAddress, addr1.Hash().String(), 0)
+	pow1.WorkMulticore()
+	addr2, _ := pkgAddress.NewAddress("bbb!")
+	pow2 := proofofwork.New(MinimumProofBitsAddress, addr2.Hash().String(), 0)
+	pow2.WorkMulticore()
+	addr3, _ := pkgAddress.NewAddress("ccc!")
+	pow3 := proofofwork.New(MinimumProofBitsAddress, addr3.Hash().String(), 0)
+	pow3.WorkMulticore()
+	// addr4, _ := pkgAddress.NewAddress("ddd!")
+	// pow4 := proofofwork.New(22, addr4.Hash().String(), 1540921)
+
+	// Insert some records
+	insertAddressRecord(*addr2, "../../testdata/key-2.json", fakeRoutingId.String(), pow2, "")
+	insertAddressRecord(*addr1, "../../testdata/key-1.json", fakeRoutingId.String(), pow1, addr2.Hash().String())
+	insertAddressRecord(*addr3, "../../testdata/key-3.json", fakeRoutingId.String(), pow3, addr1.Hash().String())
+
+	req := http.NewRequest("GET", "/", "", nil)
+	res := GetAddressHash(addr3.Hash(), req)
+	assert.Equal(t, 200, res.StatusCode)
+	info := getAddressRecord(res)
+	assert.Equal(t, "c83ce9b6948f49423ef5bcea1db597b89811dbc181c52bc573c0f87fba59e3a5", info.Hash)
+	assert.Equal(t, "rsa MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwj+dRyW55NXuBPF9/YOBP8VXL3QNYesGByEuKiZMOJkSnMg92FfKAF7EflGPp3GREF27DGCJurYDqBHFuBxFkJ3gUVD6AeQTlVGgvJ7MOhyhpMuIICqSw2WJZ+P3PM8d8fqHammwg0plsLFyZvrhFSbN6T/HYTaZfe0jO4iIxqR5SwhTY0JOKULmDVjVu5BgX9jzNA+nkr3OQ3HUuxgwmOMwCJkz9QEhv8/fROZNHR7xjDJ9iCUSswqPIlphJEH2hdV/UVVxX7bi36yze1IliR9VpOyS/VmlEE9M3k1mQ6r/vInGHdWBrmA8ri5J+EthawWA3dtwEgu9+iVCqrVVkwIDAQAB", info.PubKey)
+}
+
+// test redirection
+func TestDepth(t *testing.T) {
+	setupRepo()
+
+	addr1, _ := pkgAddress.NewAddress("aaa!")
+	pow1 := proofofwork.New(MinimumProofBitsAddress, addr1.Hash().String(), 0)
+	pow1.WorkMulticore()
+	addr2, _ := pkgAddress.NewAddress("bbb!")
+	pow2 := proofofwork.New(MinimumProofBitsAddress, addr2.Hash().String(), 0)
+	pow2.WorkMulticore()
+	addr3, _ := pkgAddress.NewAddress("ccc!")
+	pow3 := proofofwork.New(MinimumProofBitsAddress, addr3.Hash().String(), 0)
+	pow3.WorkMulticore()
+	addr4, _ := pkgAddress.NewAddress("ddd!")
+	pow4 := proofofwork.New(MinimumProofBitsAddress, addr4.Hash().String(), 0)
+	pow4.WorkMulticore()
+	addr5, _ := pkgAddress.NewAddress("eee!")
+	pow5 := proofofwork.New(MinimumProofBitsAddress, addr5.Hash().String(), 0)
+	pow5.WorkMulticore()
+
+	// Insert some records
+	insertAddressRecord(*addr1, "../../testdata/key-1.json", fakeRoutingId.String(), pow1, "")
+	insertAddressRecord(*addr2, "../../testdata/key-2.json", fakeRoutingId.String(), pow2, addr1.Hash().String())
+	insertAddressRecord(*addr3, "../../testdata/key-3.json", fakeRoutingId.String(), pow3, addr2.Hash().String())
+	insertAddressRecord(*addr4, "../../testdata/key-4.json", fakeRoutingId.String(), pow4, addr3.Hash().String())
+
+	MaxRedirectDepth = 2
+
+	req := http.NewRequest("GET", "/", "", nil)
+	res := GetAddressHash(addr4.Hash(), req)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Equal(t, "{\n  \"error\": \"maximum redirection reached\"\n}", res.Body)
+
+	res = GetAddressHash(addr3.Hash(), req)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Equal(t, "{\n  \"error\": \"maximum redirection reached\"\n}", res.Body)
+
+	res = GetAddressHash(addr2.Hash(), req)
+	assert.Equal(t, 200, res.StatusCode)
+
+	res = GetAddressHash(addr1.Hash(), req)
+	assert.Equal(t, 200, res.StatusCode)
+
+	// Add new entry should not work with redir
+	resp := insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, addr4.Hash().String())
+	assert.Equal(t, 400, resp.StatusCode)
+	assert.Equal(t, "{\n  \"error\": \"maximum redirection reached\"\n}", resp.Body)
+
+	resp = insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, "")
+	assert.Equal(t, 201, resp.StatusCode)
+	assert.Equal(t, "\"created\"", resp.Body)
+}
+
+// test depth
+func TestCyclic(t *testing.T) {
+	setupRepo()
+
+	addr1, _ := pkgAddress.NewAddress("aaa!")
+	pow1 := proofofwork.New(MinimumProofBitsAddress, addr1.Hash().String(), 0)
+	pow1.WorkMulticore()
+	addr2, _ := pkgAddress.NewAddress("bbb!")
+	pow2 := proofofwork.New(MinimumProofBitsAddress, addr2.Hash().String(), 0)
+	pow2.WorkMulticore()
+	addr3, _ := pkgAddress.NewAddress("ccc!")
+	pow3 := proofofwork.New(MinimumProofBitsAddress, addr3.Hash().String(), 0)
+	pow3.WorkMulticore()
+	addr4, _ := pkgAddress.NewAddress("ddd!")
+	pow4 := proofofwork.New(MinimumProofBitsAddress, addr4.Hash().String(), 0)
+	pow4.WorkMulticore()
+	addr5, _ := pkgAddress.NewAddress("eee!")
+	pow5 := proofofwork.New(MinimumProofBitsAddress, addr5.Hash().String(), 0)
+	pow5.WorkMulticore()
+
+	MaxRedirectDepth = 5
+
+	// Insert some records
+	insertAddressRecord(*addr4, "../../testdata/key-4.json", fakeRoutingId.String(), pow4, "")
+	insertAddressRecord(*addr2, "../../testdata/key-2.json", fakeRoutingId.String(), pow2, addr4.Hash().String())
+	insertAddressRecord(*addr3, "../../testdata/key-1.json", fakeRoutingId.String(), pow3, addr2.Hash().String())
+	updateAddressRecord(*addr4, "../../testdata/key-4.json", fakeRoutingId.String(), addr3.Hash().String())
+
+	req := http.NewRequest("GET", "/", "", nil)
+	res := GetAddressHash(addr4.Hash(), req)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Equal(t, "{\n  \"error\": \"cyclic dependency detected \"\n}", res.Body)
+
+	res = GetAddressHash(addr3.Hash(), req)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Equal(t, "{\n  \"error\": \"cyclic dependency detected \"\n}", res.Body)
+
+	res = GetAddressHash(addr2.Hash(), req)
+	assert.Equal(t, 400, res.StatusCode)
+	assert.Equal(t, "{\n  \"error\": \"cyclic dependency detected \"\n}", res.Body)
+
+	// Add new entry should not work with cyclic
+	resp := insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, addr4.Hash().String())
+	assert.Equal(t, 400, resp.StatusCode)
+	assert.Equal(t, "{\n  \"error\": \"maximum redirection reached\"\n}", resp.Body)
+
+	resp = insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, "")
+	assert.Equal(t, 201, resp.StatusCode)
+	assert.Equal(t, "\"created\"", resp.Body)
 }

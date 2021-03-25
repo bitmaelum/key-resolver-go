@@ -60,7 +60,7 @@ func NewSqliteResolver(dsn string) Repository {
 		TimeNow: time.Now(),
 	}
 
-	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_address (hash VARCHAR(64) PRIMARY KEY, pubkey TEXT, routing_id VARCHAR(64), proof TEXT, serial INTEGER, deleted INTEGER, deleted_at INTEGER)")
+	_, err = db.conn.Exec("CREATE TABLE IF NOT EXISTS mock_address (hash VARCHAR(64) PRIMARY KEY, redir_hash VARCHAR(64), pubkey TEXT, routing_id VARCHAR(64), proof TEXT, serial INTEGER, deleted INTEGER, deleted_at INTEGER)")
 	if err != nil {
 		return nil
 	}
@@ -73,17 +73,17 @@ func NewSqliteResolver(dsn string) Repository {
 	return db
 }
 
-func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey) (bool, error) {
+func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing string, publicKey *bmcrypto.PubKey, redirHash string) (bool, error) {
 	newSerial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
 	_ = r.updateKeyHistory(info.Hash, publicKey.Fingerprint(), KSNormal)
 
-	st, err := r.conn.Prepare("UPDATE mock_address SET routing_id=?, pubkey=?, serial=? WHERE hash=? AND serial=?")
+	st, err := r.conn.Prepare("UPDATE mock_address SET routing_id=?, pubkey=?, serial=?, redir_hash=? WHERE hash=? AND serial=?")
 	if err != nil {
 		return false, err
 	}
 
-	res, err := st.Exec(routing, publicKey.String(), newSerial, info.Hash, info.Serial)
+	res, err := st.Exec(routing, publicKey.String(), newSerial, redirHash, info.Hash, info.Serial)
 	if err != nil {
 		return false, err
 	}
@@ -98,12 +98,12 @@ func (r *SqliteDbResolver) Update(info *ResolveInfoType, routing string, publicK
 	return true, nil
 }
 
-func (r *SqliteDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof string) (bool, error) {
+func (r *SqliteDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubKey, proof, redirHash string) (bool, error) {
 	serial := strconv.FormatUint(uint64(r.TimeNow.UnixNano()), 10)
 
 	_ = r.updateKeyHistory(hash, publicKey.Fingerprint(), KSNormal)
 
-	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, ?, ?)", hash, publicKey.String(), routing, proof, serial, 0, 0)
+	res, err := r.conn.Exec("INSERT INTO mock_address VALUES (?, ?, ?, ?, ?, ?, ?, ?)", hash, redirHash, publicKey.String(), routing, proof, serial, 0, 0)
 	if err != nil {
 		return false, err
 	}
@@ -121,6 +121,7 @@ func (r *SqliteDbResolver) Create(hash, routing string, publicKey *bmcrypto.PubK
 func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 	var (
 		h   string
+		rh  string
 		pk  string
 		rt  string
 		pow string
@@ -129,13 +130,14 @@ func (r *SqliteDbResolver) Get(hash string) (*ResolveInfoType, error) {
 		da  int64
 	)
 
-	err := r.conn.QueryRow("SELECT hash, pubkey, routing_id, proof, serial, deleted, deleted_at FROM mock_address WHERE hash LIKE ?", hash).Scan(&h, &pk, &rt, &pow, &sn, &d, &da)
+	err := r.conn.QueryRow("SELECT hash, redir_hash, pubkey, routing_id, proof, serial, deleted, deleted_at FROM mock_address WHERE hash LIKE ?", hash).Scan(&h, &rh, &pk, &rt, &pow, &sn, &d, &da)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 
 	return &ResolveInfoType{
 		Hash:      h,
+		RedirHash: rh,
 		RoutingID: rt,
 		PubKey:    pk,
 		Proof:     pow,
