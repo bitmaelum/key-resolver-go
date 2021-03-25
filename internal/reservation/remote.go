@@ -22,6 +22,7 @@ package reservation
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -53,8 +54,11 @@ func NewRemoteRepository(baseUrl string, client *http.Client) ReservationReposit
 func (r RemoteRepository) IsValidated(h hash.Hash, pk *bmcrypto.PubKey) (bool, error) {
 	domains, err := r.GetDomains(h)
 	if err != nil {
+		fmt.Println("Is Validated: errored: ", err)
 		return false, err
 	}
+
+	fmt.Println("Is Validated: domain count: ", d)
 
 	// Not reserved
 	if len(domains) == 0 {
@@ -84,6 +88,8 @@ func (r RemoteRepository) IsReserved(h hash.Hash) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
+	fmt.Println("Is Reserved: domain count: ", d)
 
 	return len(d) > 0, nil
 }
