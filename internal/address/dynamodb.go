@@ -57,9 +57,8 @@ type recordType struct {
 }
 
 type historyRecordType struct {
-	Hash        string    `dynamodbav:"hash"`
-	Fingerprint string    `dynamodbav:"fingerprint"`
-	Status      KeyStatus `dynamodbav:"status"`
+	HashFingerprint string    `dynamodbav:"hash_fingerprint"`
+	Status          KeyStatus `dynamodbav:"status"`
 }
 
 // NewDynamoDBResolver returns a new resolver based on DynamoDB
@@ -244,8 +243,7 @@ func (r *dynamoDbResolver) GetKeyStatus(hash string, fingerprint string) (KeySta
 	result, err := r.Dyna.GetItem(&dynamodb.GetItemInput{
 		TableName: aws.String(r.HistoryTableName),
 		Key: map[string]*dynamodb.AttributeValue{
-			"hash":        {S: aws.String(hash)},
-			"fingerprint": {S: aws.String(fingerprint)},
+			"hash_fingerprint": {S: aws.String(hash + fingerprint)},
 		},
 	})
 	// Error while fetching record
@@ -289,9 +287,8 @@ func (r *dynamoDbResolver) SetKeyStatus(hash string, fingerprint string, status 
 
 func (r *dynamoDbResolver) updateKeyHistory(hash, fingerprint string, status KeyStatus) (bool, error) {
 	av, err := dynamodbattribute.MarshalMap(historyRecordType{
-		Hash:        hash,
-		Fingerprint: fingerprint,
-		Status:      status,
+		HashFingerprint: hash + fingerprint,
+		Status:          status,
 	})
 	if err != nil {
 		return false, err

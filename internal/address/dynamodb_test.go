@@ -116,9 +116,8 @@ func TestCreate(t *testing.T) {
 	}
 
 	historyItems := map[string]*dynamodb.AttributeValue{
-		"hash":        {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
-		"fingerprint": {S: aws.String("b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758")},
-		"status":      {N: aws.String(fmt.Sprintf("%d", KSNormal))},
+		"hash_fingerprint": {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2b74bb232a9ea0154c10f275da4be8a4233fcf7c3bc42038206fe527cb566f758")},
+		"status":           {N: aws.String(fmt.Sprintf("%d", KSNormal))},
 	}
 	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(historyItems).WillReturns(dynamodb.PutItemOutput{})
 
@@ -189,9 +188,8 @@ func TestUpdate(t *testing.T) {
 	mock.ExpectUpdateItem().ToTable("mock_address_table").WithKeys(expectKey)
 
 	expectedItems := map[string]*dynamodb.AttributeValue{
-		"hash":        {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2")},
-		"fingerprint": {S: aws.String(pubkey.Fingerprint())},
-		"status":      {N: aws.String(fmt.Sprintf("%d", KSNormal))},
+		"hash_fingerprint": {S: aws.String("cf99b895f350b77585881438ab38a935e68c9c7409c5adaad23fb17572ca1ea2" + pubkey.Fingerprint())},
+		"status":           {N: aws.String(fmt.Sprintf("%d", KSNormal))},
 	}
 	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(expectedItems)
 
@@ -223,17 +221,15 @@ func TestHistory(t *testing.T) {
 	// Set first key to normal
 
 	expectedItems := map[string]*dynamodb.AttributeValue{
-		"hash":        {S: aws.String(addrHash.String())},
-		"fingerprint": {S: aws.String(pub1.Fingerprint())},
-		"status":      {N: aws.String(fmt.Sprintf("%d", KSNormal))},
+		"hash_fingerprint": {S: aws.String(addrHash.String() + pub1.Fingerprint())},
+		"status":           {N: aws.String(fmt.Sprintf("%d", KSNormal))},
 	}
 	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(expectedItems)
 
 	result := dynamodb.GetItemOutput{
 		Item: map[string]*dynamodb.AttributeValue{
-			"hash":        {S: aws.String(addrHash.String())},
-			"fingerprint": {S: aws.String(pub1.Fingerprint())},
-			"status":      {N: aws.String("1")},
+			"hash_fingerprint": {S: aws.String(addrHash.String() + pub1.Fingerprint())},
+			"status":           {N: aws.String("1")},
 		},
 	}
 	mock.ExpectGetItem().ToTable("mock_history_table").WillReturns(result)
@@ -245,9 +241,8 @@ func TestHistory(t *testing.T) {
 	_, pub2, _ := bmcrypto.GenerateKeyPair(bmcrypto.KeyTypeED25519)
 
 	expectedItems = map[string]*dynamodb.AttributeValue{
-		"hash":        {S: aws.String(addrHash.String())},
-		"fingerprint": {S: aws.String(pub2.Fingerprint())},
-		"status":      {N: aws.String(fmt.Sprintf("%d", KSCompromised))},
+		"hash_fingerprint": {S: aws.String(addrHash.String() + pub2.Fingerprint())},
+		"status":           {N: aws.String(fmt.Sprintf("%d", KSCompromised))},
 	}
 	mock.ExpectPutItem().ToTable("mock_history_table").WithItems(expectedItems)
 
