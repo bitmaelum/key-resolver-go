@@ -98,6 +98,11 @@ func PostAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 		return http.CreateError("error while posting record", 500)
 	}
 
+	if uploadBody.RedirHash == "" && uploadBody.RoutingID == "" {
+		log.Print(err)
+		return http.CreateError("both redir hash and routing ID cannot be empty", 400)
+	}
+
 	// Check if redirection is confirming our rules (maxdepth and cyclic dependency)
 	httpErr = validateRedirection(uploadBody.RedirHash)
 	if httpErr != nil {
