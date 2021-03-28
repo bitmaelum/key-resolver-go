@@ -117,7 +117,7 @@ func DeleteOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response 
 		return http.CreateError("error while deleting record", 500)
 	}
 
-	return http.CreateOutput("ok", 200)
+	return http.CreateMessage("organisation has been deleted", 200)
 }
 
 func updateOrganisation(uploadBody organisationUploadBody, req http.Request, current *organisation.ResolveInfoType) *http.Response {
@@ -133,7 +133,7 @@ func updateOrganisation(uploadBody organisationUploadBody, req http.Request, cur
 		return http.CreateError("error while updating: ", 500)
 	}
 
-	return http.CreateOutput("updated", 200)
+	return http.CreateMessage("organisation has been updated", 200)
 }
 
 func createOrganisation(orgHash hash.Hash, uploadBody organisationUploadBody) *http.Response {
@@ -158,7 +158,7 @@ func createOrganisation(orgHash hash.Hash, uploadBody organisationUploadBody) *h
 		return http.CreateError("error while creating: ", 500)
 	}
 
-	return http.CreateOutput("created", 201)
+	return http.CreateMessage("organisation has been created", 201)
 }
 
 func validateOrganisationBody(_ organisationUploadBody) bool {

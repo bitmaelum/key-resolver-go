@@ -141,7 +141,7 @@ func DeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
 		return http.CreateError("error while deleting record", 500)
 	}
 
-	return http.CreateOutput("ok", 200)
+	return http.CreateMessage("address has been deleted", 200)
 }
 
 func SoftDeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
@@ -164,7 +164,7 @@ func SoftDeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response 
 		return http.CreateError("error while deleting record", 500)
 	}
 
-	return http.CreateOutput("", 204)
+	return http.CreateMessage("address has been soft-deleted", 200)
 }
 
 func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Response {
@@ -191,7 +191,7 @@ func SoftUndeleteAddressHash(addrHash hash.Hash, req http.Request) *http.Respons
 		return http.CreateError("error while undeleting record", 500)
 	}
 
-	return http.CreateOutput("", 204)
+	return http.CreateMessage("address has been undeleted", 200)
 }
 
 func GetKeyStatus(hash hash.Hash, req http.Request) *http.Response {
@@ -206,17 +206,17 @@ func GetKeyStatus(hash hash.Hash, req http.Request) *http.Response {
 		return http.CreateError("not found", 404)
 	}
 
-	var statusMap = map[address.KeyStatus]int{
-		address.KSNormal:      204,
-		address.KSCompromised: 410,
+	var messageMap = map[address.KeyStatus]string{
+		address.KSNormal:      "normal",
+		address.KSCompromised: "compromised",
 	}
 
-	status, ok := statusMap[ks]
+	msg, ok := messageMap[ks]
 	if !ok {
-		status = 404
+		msg = "unknown"
 	}
 
-	return http.CreateOutput("", status)
+	return http.CreateMessage(msg, 200)
 }
 
 func SetKeyStatus(hash hash.Hash, req http.Request) *http.Response {
@@ -249,7 +249,7 @@ func SetKeyStatus(hash hash.Hash, req http.Request) *http.Response {
 		return http.CreateError("error while updating", 400)
 	}
 
-	return http.CreateOutput("key updated", 200)
+	return http.CreateMessage("key status has been updated", 200)
 }
 
 func updateAddress(uploadBody addressUploadBody, req http.Request, current *address.ResolveInfoType) *http.Response {
@@ -265,7 +265,7 @@ func updateAddress(uploadBody addressUploadBody, req http.Request, current *addr
 		return http.CreateError("error while updating: ", 500)
 	}
 
-	return http.CreateOutput("updated", 200)
+	return http.CreateMessage("address has been updated", 200)
 }
 
 func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Response {
@@ -286,7 +286,7 @@ func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Respo
 		return http.CreateError("error while creating: ", 500)
 	}
 
-	return http.CreateOutput("created", 201)
+	return http.CreateMessage("address has been created", 201)
 }
 
 func validateAddress(addrHash hash.Hash, body *addressUploadBody) *http.Response {

@@ -94,10 +94,21 @@ type RawJSONOut map[string]interface{}
 // CreateError creates an error message json structure
 func CreateError(msg string, statusCode int) *Response {
 	errBody := JsonOut{
-		"error": msg,
+		"status": "error",
+		"message": msg,
 	}
 
 	return CreateOutput(errBody, statusCode)
+}
+
+// CreateMessage creates an regular message json structure
+func CreateMessage(msg string, statusCode int) *Response {
+	msgBody := JsonOut{
+		"status": "ok",
+		"message": msg,
+	}
+
+	return CreateOutput(msgBody, statusCode)
 }
 
 // createOutput creates json output for data

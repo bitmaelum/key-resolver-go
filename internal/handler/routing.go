@@ -100,7 +100,7 @@ func updateRouting(uploadBody routingUploadBody, req http.Request, current *rout
 		return http.CreateError("error while updating: ", 500)
 	}
 
-	return http.CreateOutput("updated", 200)
+	return http.CreateMessage("routing has been updated", 200)
 }
 
 func createRouting(routingHash hash.Hash, uploadBody routingUploadBody) *http.Response {
@@ -112,7 +112,7 @@ func createRouting(routingHash hash.Hash, uploadBody routingUploadBody) *http.Re
 		return http.CreateError("error while creating: ", 500)
 	}
 
-	return http.CreateOutput("created", 201)
+	return http.CreateMessage("routing has been created", 201)
 }
 
 func DeleteRoutingHash(routingHash hash.Hash, req http.Request) *http.Response {
@@ -137,7 +137,7 @@ func DeleteRoutingHash(routingHash hash.Hash, req http.Request) *http.Response {
 		return http.CreateError("error while deleting record", 500)
 	}
 
-	return http.CreateOutput("ok", 200)
+	return http.CreateMessage("routing has been deleted", 200)
 }
 
 func validateRoutingBody(body routingUploadBody) bool {

@@ -10,6 +10,24 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    ConfigOut:
+      type: object
+      required:
+        - proof_of_work
+      properties:
+        proof_of_work:
+          type: object
+          required:
+            - address
+            - organisation
+          properties:
+            address:
+              type: integer
+              example: 27
+            organisation:
+              type: integer
+              example: 27
+
     AddressOut:
       type: object
       required:
@@ -57,6 +75,19 @@ components:
           type: integer
           example: 1607509742876620000
 
+    RoutingIn:
+      type: object
+      required:
+        - public_key
+        - routing
+      properties:
+        public_key:
+          type: string
+          example: "ed25519 MCowBQYDK2VwAyEAvGQhl5wUx3F2RunI3dU74atL3kbBTvJg+QkrErEUivk="
+        routing:
+          type: string
+          example: "bitmaelum.noxlogic.nl"
+
     OrganisationOut:
       type: object
       required:
@@ -89,7 +120,6 @@ tags:
   - name: "routing"
     description: "Operations on routing"
 
-
 servers:
   - url: https://resolver.bitmaelum.com
   - url: https://resolver-staging.bitmaelum.com
@@ -102,17 +132,23 @@ paths:
       summary: "Retrieves the main index (logo) of the key resolver."
       responses:
         '200':
-          description: Main index
+          description: Returns the main logo in HTML format
   /config.json:
     get:
       tags:
         - "misc"
       summary: "Retrieves the key resolver configuration settings."
+      description: |
+        The key resolver configuration dictates how certain inputs should adhere to. For now, this means that
+        it will return the minimum number of bits for proof-of-work that needs to be done before accepting
+        an address or organisation.
       responses:
         '200':
           description: Key resolver configuration settings
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigOut"
               examples:
                 main configuration:
                   value: |-
@@ -122,6 +158,7 @@ paths:
                         "organisation": 29
                       }
                     }
+
   /address/{hash}:
     parameters:
     - name: "hash"
@@ -151,12 +188,14 @@ paths:
     post:
       tags:
         - "address"
+      summary: Creates or updates an address hash
       responses:
         '201':
           description: Created address
     delete:
       tags:
         - "address"
+      summary: Deletes/purges an address hash
       responses:
         '204':
           description: Address successfully deleted
@@ -172,6 +211,7 @@ paths:
     post:
       tags:
         - "address"
+      summary: Soft-deletes an address hash
       responses:
         '200':
           description: Create or updated address
@@ -186,6 +226,7 @@ paths:
     post:
       tags:
         - "address"
+      summary: Undeletes a soft-deleted address hash
       responses:
         '200':
           description: Create or updated address
@@ -208,12 +249,14 @@ paths:
     get:
       tags:
         - "address"
+      summary: Queries if a key (fingerprint) exists in the history off the given account
       responses:
         '200':
           description: Create or updated address
     post:
       tags:
         - "address"
+      summary: Posts a key (fingerprint) status update
       responses:
         '200':
           description: Create or updated address
@@ -231,6 +274,7 @@ paths:
     get:
       tags:
         - "routing"
+      summary: Queries a routing by ID
       responses:
         '200':
           description: Found routing object
@@ -238,15 +282,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RoutingOut"
+        '404':
+          description: Routing not found
+
     post:
       tags:
         - "routing"
+      summary: Creates or updates a routing
+      requestBody:
+        description: Routing object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoutingIn"
       responses:
         '200':
-          description: Create or updated routing ID
+          description: Create or updated routing
+        '500':
+          description: Internal error occurred
+        '400':
+          description: Invalid body
+        '401':
+          description: Authentication failed (update only)
+
     delete:
       tags:
         - "routing"
+      summary: Deletes/purges a routing
       responses:
         '200':
           description: Remove/purge a routing ID
