@@ -10,6 +10,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+
     ConfigOut:
       type: object
       required:
@@ -27,6 +28,19 @@ components:
             organisation:
               type: integer
               example: 27
+
+    GenericResultOut:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - error
+        message:
+          type: string
 
     AddressOut:
       type: object
@@ -133,6 +147,7 @@ paths:
       responses:
         '200':
           description: Returns the main logo in HTML format
+
   /config.json:
     get:
       tags:
@@ -149,15 +164,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ConfigOut"
-              examples:
-                main configuration:
-                  value: |-
-                    {
-                      "proof_of_work": {
-                        "address": 27,
-                        "organisation": 29
-                      }
+              example:
+                value: |-
+                  {
+                    "proof_of_work": {
+                      "address": 27,
+                      "organisation": 29
                     }
+                  }
+
+
 
   /address/{hash}:
     parameters:
@@ -182,8 +198,30 @@ paths:
                 $ref: "#/components/schemas/AddressOut"
         '400':
           description: Incorrect hash address
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "error",
+                  message: "incorrect hash address"
+                }
         '404':
           description: Address hash not found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "error",
+                  message: "unauthenticated"
+                }
 
     post:
       tags:
@@ -192,12 +230,23 @@ paths:
       responses:
         '201':
           description: Created address
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "ok",
+                  message: "hash address created"
+                }
     delete:
       tags:
         - "address"
       summary: Deletes/purges an address hash
       responses:
-        '204':
+        '200':
           description: Address successfully deleted
 
   /address/{hash}/delete:
@@ -284,6 +333,15 @@ paths:
                 $ref: "#/components/schemas/RoutingOut"
         '404':
           description: Routing not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "error",
+                    message: "routing not found"
+                  }
 
     post:
       tags:
@@ -299,12 +357,48 @@ paths:
       responses:
         '200':
           description: Create or updated routing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "ok",
+                    message: "routing created"
+                  }
         '500':
           description: Internal error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "error",
+                    message: "internal error"
+                  }
         '400':
           description: Invalid body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "error",
+                    message: "invalid data"
+                  }
         '401':
           description: Authentication failed (update only)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "error",
+                    message: "authentication failed"
+                  }
 
     delete:
       tags:
@@ -313,12 +407,48 @@ paths:
       responses:
         '200':
           description: Remove/purge a routing ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "ok",
+                    message: "successfully deleted routing"
+                  }
         '500':
           description: Internal error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "error",
+                    message: "internal error occurred"
+                  }
         '404':
           description: Hash not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "error",
+                    message: "routing not found"
+                  }
         '401':
           description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResultOut'
+                example:
+                  {
+                    status: "error",
+                    message: "authentication failed"
+                  }
 
   /organisation/{hash}:
     parameters:
@@ -339,18 +469,83 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OrganisationOut"
+        '404':
+          description: Organisation not found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "error",
+                  message: "organisation not found"
+                }
     post:
       tags:
         - "organisation"
       responses:
         '200':
           description: Create or update organisation
+
     delete:
       tags:
         - "organisation"
       responses:
         '200':
           description: Remove/purge an organisation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "ok",
+                  message: "organisation deleted"
+                }
+        '500':
+          description: Internal error occurred
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "error",
+                  message: "internal error"
+                }
+        '404':
+          description: Organisation not found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "error",
+                  message: "organisation not found"
+                }
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "error",
+                  message: "unauthenticated"
+                }
+
 
   /organisation/{hash}/delete:
     parameters:
@@ -364,8 +559,8 @@ paths:
       tags:
         - "organisation"
       responses:
-        '200':
-          description: Deactivate an active organisation
+        '500':
+          description: Not yet implemented
 
   /organisation/{hash}/undelete:
     parameters:
@@ -379,5 +574,5 @@ paths:
       tags:
         - "organisation"
       responses:
-        '200':
-          description: Activate a deactivated organisation
+        '500':
+          description: Not yet implemented

@@ -167,9 +167,9 @@ func validateOrganisationBody(_ organisationUploadBody) bool {
 }
 
 func SoftDeleteOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response {
-	return nil
+	return http.CreateMessage("not yet implemented", 500)
 }
 
 func SoftUndeleteOrganisationHash(orgHash hash.Hash, req http.Request) *http.Response {
-	return nil
+	return http.CreateMessage("not yet implemented", 500)
 }
