@@ -51,7 +51,7 @@ func TestHandleNoHash(t *testing.T) {
 
 	assert.Equal(t, 400, res.StatusCode)
 	assert.Equal(t, "application/json", res.Headers["Content-Type"])
-	assert.Equal(t, "{\n  \"error\": \"Incorrect hash address\"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"Incorrect hash address\",\"status\": \"error\"}", res.Body)
 }
 
 func TestHandleRequest404(t *testing.T) {
@@ -67,7 +67,7 @@ func TestHandleRequest404(t *testing.T) {
 
 	assert.Equal(t, 403, res.StatusCode)
 	assert.Equal(t, "application/json", res.Headers["Content-Type"])
-	assert.Equal(t, "{\n  \"error\": \"Forbidden\"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"Forbidden\",\"status\": \"error\"}", res.Body)
 }
 
 func TestHandleConfig(t *testing.T) {

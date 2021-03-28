@@ -62,13 +62,13 @@ func TestAddress(t *testing.T) {
 	req := http.NewRequest("GET", "/", "", nil)
 	res := GetAddressHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 404, res.StatusCode)
-	assert.JSONEq(t, `{ "error": "hash not found" }`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"hash not found\",\"status\": \"error\"}", res.Body)
 
 	// Insert illegal body
 	req = http.NewRequest("GET", "/", "illegal body that should error", nil)
 	res = PostAddressHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.JSONEq(t, `{ "error": "invalid data" }`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"invalid data\",\"status\": \"error\"}", res.Body)
 
 	// Insert with illegal proof-of-work
 	pow2 := proofofwork.New(22, "somethingelse", 4231918)
@@ -95,7 +95,7 @@ func TestAddress(t *testing.T) {
 	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), pow, "")
 	assert.NotNil(t, res)
 	assert.Equal(t, 201, res.StatusCode)
-	assert.Equal(t, `"created"`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"address has been created\",\"status\": \"ok\"}", res.Body)
 
 	// Test fetching known hash
 	req = http.NewRequest("GET", "/", "", nil)
@@ -189,7 +189,7 @@ func TestAddressUpdate(t *testing.T) {
 
 	res = updateAddress(*body, req, &current)
 	assert.Equal(t, 401, res.StatusCode)
-	assert.JSONEq(t, `{ "error": "unauthenticated" }`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"unauthenticated\",\"status\": \"error\"}", res.Body)
 
 	// Create authentication token
 	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-3.json")
@@ -204,7 +204,7 @@ func TestAddressUpdate(t *testing.T) {
 	setRepoTime(time.Date(2010, 12, 13, 12, 34, 56, 1241511, time.UTC))
 	res = updateAddress(*body, req, &current)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, `"updated"`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"address has been updated\",\"status\": \"ok\"}", res.Body)
 
 	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
@@ -329,7 +329,8 @@ func TestAddressSoftDeletion(t *testing.T) {
 	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = SoftDeleteAddressHash(addr1.Hash(), req)
-	assert.Equal(t, 204, res.StatusCode)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.JSONEq(t, "{\"message\": \"address has been soft-deleted\",\"status\": \"ok\"}", res.Body)
 
 	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
@@ -341,7 +342,8 @@ func TestAddressSoftDeletion(t *testing.T) {
 	req = http.NewRequest("GET", "/", "", nil)
 	req.Headers.Set("authorization", "BEARER "+authToken)
 	res = SoftUndeleteAddressHash(addr1.Hash(), req)
-	assert.Equal(t, 204, res.StatusCode)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.JSONEq(t, "{\"message\": \"address has been undeleted\",\"status\": \"ok\"}", res.Body)
 
 	req = http.NewRequest("GET", "/", "", nil)
 	res = GetAddressHash(addr1.Hash(), req)
@@ -364,14 +366,15 @@ func TestHistory(t *testing.T) {
 	res := insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), pow, "")
 	assert.NotNil(t, res)
 	assert.Equal(t, 201, res.StatusCode)
-	assert.Equal(t, `"created"`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"address has been created\",\"status\": \"ok\"}", res.Body)
 
 	// Test history of key
 	req := http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "", map[string]string{
 		"fingerprint": pub.Fingerprint(),
 	})
 	res = GetKeyStatus(addr.Hash(), req)
-	assert.Equal(t, 204, res.StatusCode)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.JSONEq(t, "{\"message\": \"normal\",\"status\": \"ok\"}", res.Body)
 
 	// Check history of non-existing key
 	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub2.Fingerprint(), "", map[string]string{
@@ -406,7 +409,8 @@ func TestHistory(t *testing.T) {
 		"fingerprint": pub.Fingerprint(),
 	})
 	res = GetKeyStatus(addr.Hash(), req)
-	assert.Equal(t, 410, res.StatusCode)
+	assert.Equal(t, 200, res.StatusCode)
+	assert.JSONEq(t, "{\"message\": \"compromised\",\"status\": \"ok\"}", res.Body)
 
 	// Set key to normal
 	req = http.NewRequest("GET", "/address/"+addr.Hash().String()+"/check/"+pub.Fingerprint(), "{\"status\":\"normal\"}", map[string]string{
@@ -560,11 +564,11 @@ func TestDepth(t *testing.T) {
 	req := http.NewRequest("GET", "/", "", nil)
 	res := GetAddressHash(addr4.Hash(), req)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"maximum redirection reached\"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"maximum redirection reached\",\"status\": \"error\"}", res.Body)
 
 	res = GetAddressHash(addr3.Hash(), req)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"maximum redirection reached\"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"maximum redirection reached\",\"status\": \"error\"}", res.Body)
 
 	res = GetAddressHash(addr2.Hash(), req)
 	assert.Equal(t, 200, res.StatusCode)
@@ -575,11 +579,11 @@ func TestDepth(t *testing.T) {
 	// Add new entry should not work with redir
 	resp := insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, addr4.Hash().String())
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"maximum redirection reached\"\n}", resp.Body)
+	assert.JSONEq(t, "{\"message\": \"maximum redirection reached\",\"status\": \"error\"}", resp.Body)
 
 	resp = insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, "")
 	assert.Equal(t, 201, resp.StatusCode)
-	assert.Equal(t, "\"created\"", resp.Body)
+	assert.JSONEq(t, "{\"message\": \"address has been created\",\"status\": \"ok\"}", resp.Body)
 }
 
 // test depth
@@ -613,22 +617,22 @@ func TestCyclic(t *testing.T) {
 	req := http.NewRequest("GET", "/", "", nil)
 	res := GetAddressHash(addr4.Hash(), req)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"cyclic dependency detected \"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"cyclic dependency detected\",\"status\": \"error\"}", res.Body)
 
 	res = GetAddressHash(addr3.Hash(), req)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"cyclic dependency detected \"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"cyclic dependency detected\",\"status\": \"error\"}", res.Body)
 
 	res = GetAddressHash(addr2.Hash(), req)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"cyclic dependency detected \"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"cyclic dependency detected\",\"status\": \"error\"}", res.Body)
 
 	// Add new entry should not work with cyclic
 	resp := insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, addr4.Hash().String())
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"maximum redirection reached\"\n}", resp.Body)
+	assert.JSONEq(t, "{\"message\": \"maximum redirection reached\",\"status\": \"error\"}", resp.Body)
 
 	resp = insertAddressRecord(*addr5, "../../testdata/key-5.json", fakeRoutingId.String(), pow5, "")
 	assert.Equal(t, 201, resp.StatusCode)
-	assert.Equal(t, "\"created\"", resp.Body)
+	assert.JSONEq(t, "{\"message\": \"address has been created\",\"status\": \"ok\"}", resp.Body)
 }

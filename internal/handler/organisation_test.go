@@ -67,7 +67,7 @@ func TestOrganisation(t *testing.T) {
 	res = insertOrganisationRecord(orgHash, "../../testdata/key-5.json", pow, []string{"dns: foobar.com", "dns: example.com"})
 	assert.NotNil(t, res)
 	assert.Equal(t, 201, res.StatusCode)
-	assert.Equal(t, `"created"`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"organisation has been created\",\"status\": \"ok\"}", res.Body)
 
 	// Test fetching known hash
 	req = http.NewRequest("GET", "/", "", nil)
@@ -113,7 +113,7 @@ func TestOrganisationUpdate(t *testing.T) {
 
 	res = updateOrganisation(*body, req, &current)
 	assert.Equal(t, 401, res.StatusCode)
-	assert.JSONEq(t, `{ "error": "unauthenticated" }`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"unauthenticated\",\"status\": \"error\"}", res.Body)
 
 	// Create authentication token
 	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-5.json")
@@ -126,7 +126,7 @@ func TestOrganisationUpdate(t *testing.T) {
 	setRepoTime(time.Date(2010, 12, 13, 12, 34, 56, 1241511, time.UTC))
 	res = updateOrganisation(*body, req, &current)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, `"updated"`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"organisation has been updated\",\"status\": \"ok\"}", res.Body)
 
 	req = http.NewRequest("GET", "/", "", nil)
 	res = GetOrganisationHash(orgHash1, req)

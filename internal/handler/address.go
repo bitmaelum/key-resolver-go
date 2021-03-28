@@ -354,7 +354,7 @@ func recursiveGet(h hash.Hash, depth int) (*address.ResolveInfoType, *http.Respo
 		// Check for cyclic dependency
 		for i := range cyclicHashes {
 			if cyclicHashes[i] == h.String() {
-				return nil, http.CreateError("cyclic dependency detected ", 400)
+				return nil, http.CreateError("cyclic dependency detected", 400)
 			}
 		}
 		cyclicHashes = append(cyclicHashes, h.String())
