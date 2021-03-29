@@ -52,19 +52,19 @@ func TestRouting(t *testing.T) {
 	req := http.NewRequest("GET", "/", "", nil)
 	res := GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 404, res.StatusCode)
-	assert.JSONEq(t, `{ "error": "hash not found" }`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"hash not found\",\"status\": \"error\"}", res.Body)
 
 	// Insert illegal body
 	req = http.NewRequest("GET", "/", "illegal body that should error", nil)
 	res = PostRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.JSONEq(t, `{ "error": "invalid data" }`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"invalid data\",\"status\": \"error\"}", res.Body)
 
 	// Insert new hash
 	res = insertRoutingRecord("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", "../../testdata/key-1.json", "127.0.0.1")
 	assert.NotNil(t, res)
 	assert.Equal(t, 201, res.StatusCode)
-	assert.Equal(t, `"created"`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"routing has been created\",\"status\": \"ok\"}", res.Body)
 
 	// Test fetching known hash
 	req = http.NewRequest("GET", "/", "", nil)
@@ -103,7 +103,7 @@ func TestRoutingUpdate(t *testing.T) {
 
 	res = updateRouting(*body, req, &current)
 	assert.Equal(t, 401, res.StatusCode)
-	assert.JSONEq(t, `{ "error": "unauthenticated" }`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"unauthenticated\",\"status\": \"error\"}", res.Body)
 
 	// Create authentication token
 	privKey, _, _ := testing2.ReadTestKey("../../testdata/key-1.json")
@@ -117,7 +117,7 @@ func TestRoutingUpdate(t *testing.T) {
 	sr.TimeNow = time.Date(2010, 12, 13, 12, 34, 56, 1241511, time.UTC)
 	res = updateRouting(*body, req, &current)
 	assert.Equal(t, 200, res.StatusCode)
-	assert.Equal(t, `"updated"`, res.Body)
+	assert.JSONEq(t, "{\"message\": \"routing has been updated\",\"status\": \"ok\"}", res.Body)
 
 	req = http.NewRequest("GET", "/", "", nil)
 	res = GetRoutingHash("0CD8666848BF286D951C3D230E8B6E092FDE03C3A080E3454467E496E7B14E78", req)

@@ -1,0 +1,383 @@
+openapi: "3.0.2"
+info:
+  title: BitMaelum keyresolver API
+  version: "1.0"
+
+components:
+  securitySchemes:
+    name:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ConfigOut:
+      type: object
+      required:
+        - proof_of_work
+      properties:
+        proof_of_work:
+          type: object
+          required:
+            - address
+            - organisation
+          properties:
+            address:
+              type: integer
+              example: 27
+            organisation:
+              type: integer
+              example: 27
+
+    AddressOut:
+      type: object
+      required:
+        - hash
+        - public_key
+        - proof
+        - serial_number
+      properties:
+        hash:
+          type: string
+          example: "2244643da7475120bf84d744435d15ea297c36ca165ea0baaa69ec818d0e952f"
+        public_key:
+          type: string
+          example: "rsa MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvzbZbLUcFRy8fii8zZ7KI8X6cUxjD/Duf4wSqi+jMCcxPuZU1/YX8QhDNyVnnutOz/bJJTSLiJt4zuphCDqjf6lhR+wCrB1hZxqwiNbMHM0cdvaScgMj6lS8xboheZ5n39+jtfjdigIxz7DUtGFzzLeGzj3ENRrPEwkmYooCAh3s0PdrHeN461jNrMOJArqd4vJ0VyCr9Vd6fPSN0OoW6ju7NeqynDBbs4iKHcCyDPXrlWY6e3ihCJ6ksw8dNbbA+RlsHHBU7pOk7Myk0T3wTK+/FcmUbjHxaDKJcP0Cao/Hrog3wAYshnGnjdVkK+YfXgeo7o2TU1apzqLJsORTyQIDAQAB"
+        proof:
+          type: string
+          example: "27$MmU0NTUxZGU4MDRlMjdhYWNmMjBmOWRmNWJlM2U4Y2QzODRlZDY0NDg4YjIxYWIwNzlmYjU4ZThjOTAwNjhhYg==$180774681"
+        serial_number:
+          type: integer
+          example: 1609964031705632800
+        routing_id:
+          type: string
+          example: "323250728593e92f50bf1572d10318912fd611dd0f4e5d36726c0c0757b29e03"
+        redirect_hash:
+          type: string
+
+    RoutingOut:
+      type: object
+      required:
+        - hash
+        - public_key
+        - routing
+        - serial_number
+      properties:
+        hash:
+          type: string
+          example: "323250728593e92f50bf1572d10318912fd611dd0f4e5d36726c0c0757b29e03"
+        public_key:
+          type: string
+          example: "ed25519 MCowBQYDK2VwAyEAvGQhl5wUx3F2RunI3dU74atL3kbBTvJg+QkrErEUivk="
+        routing:
+          type: string
+          example: "bitmaelum.noxlogic.nl"
+        serial_number:
+          type: integer
+          example: 1607509742876620000
+
+    RoutingIn:
+      type: object
+      required:
+        - public_key
+        - routing
+      properties:
+        public_key:
+          type: string
+          example: "ed25519 MCowBQYDK2VwAyEAvGQhl5wUx3F2RunI3dU74atL3kbBTvJg+QkrErEUivk="
+        routing:
+          type: string
+          example: "bitmaelum.noxlogic.nl"
+
+    OrganisationOut:
+      type: object
+      required:
+        - hash
+        - public_key
+        - proof
+        - validations
+        - serial_number
+      properties:
+        hash:
+          type: string
+          example: "323250728593e92f50bf1572d10318912fd611dd0f4e5d36726c0c0757b29e03"
+        public_key:
+          type: string
+          example: "ed25519 MCowBQYDK2VwAyEAvGQhl5wUx3F2RunI3dU74atL3kbBTvJg+QkrErEUivk="
+        proof:
+          type: string
+          example: "bitmaelum.noxlogic.nl"
+        serial_number:
+          type: integer
+          example: 1607509742876620000
+
+tags:
+  - name: "misc"
+    description: "Miscellaneous operations"
+  - name: "address"
+    description: "Operations on addresses"
+  - name: "organisation"
+    description: "Operations on organisations"
+  - name: "routing"
+    description: "Operations on routing"
+
+servers:
+  - url: https://resolver.bitmaelum.com
+  - url: https://resolver-staging.bitmaelum.com
+
+paths:
+  /:
+    get:
+      tags:
+      - "misc"
+      summary: "Retrieves the main index (logo) of the key resolver."
+      responses:
+        '200':
+          description: Returns the main logo in HTML format
+  /config.json:
+    get:
+      tags:
+        - "misc"
+      summary: "Retrieves the key resolver configuration settings."
+      description: |
+        The key resolver configuration dictates how certain inputs should adhere to. For now, this means that
+        it will return the minimum number of bits for proof-of-work that needs to be done before accepting
+        an address or organisation.
+      responses:
+        '200':
+          description: Key resolver configuration settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigOut"
+              examples:
+                main configuration:
+                  value: |-
+                    {
+                      "proof_of_work": {
+                        "address": 27,
+                        "organisation": 29
+                      }
+                    }
+
+  /address/{hash}:
+    parameters:
+    - name: "hash"
+      in: "path"
+      example: 2244643da7475120bf84d744435d15ea297c36ca165ea0baaa69ec818d0e952f
+      description: "hash of the address to query"
+      required: true
+      schema:
+        type: "string"
+
+    get:
+      tags:
+        - "address"
+      summary: Retrieves information about an address hash
+      responses:
+        '200':
+          description: Found address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddressOut"
+        '400':
+          description: Incorrect hash address
+        '404':
+          description: Address hash not found
+
+    post:
+      tags:
+        - "address"
+      summary: Creates or updates an address hash
+      responses:
+        '201':
+          description: Created address
+    delete:
+      tags:
+        - "address"
+      summary: Deletes/purges an address hash
+      responses:
+        '204':
+          description: Address successfully deleted
+
+  /address/{hash}/delete:
+    parameters:
+    - name: "hash"
+      in: "path"
+      description: "hash of the address to query"
+      required: true
+      schema:
+        type: "string"
+    post:
+      tags:
+        - "address"
+      summary: Soft-deletes an address hash
+      responses:
+        '200':
+          description: Create or updated address
+  /address/{hash}/undelete:
+    parameters:
+    - name: "hash"
+      in: "path"
+      description: "hash of the address to query"
+      required: true
+      schema:
+        type: "string"
+    post:
+      tags:
+        - "address"
+      summary: Undeletes a soft-deleted address hash
+      responses:
+        '200':
+          description: Create or updated address
+
+  /address/{hash}/status/{fingerprint}:
+    parameters:
+    - name: "hash"
+      in: "path"
+      description: "hash of the address to query"
+      required: true
+      schema:
+        type: "string"
+    - name: "fingerprint"
+      in: "path"
+      description: "fingerprint of the key to query"
+      required: true
+      schema:
+        type: "string"
+
+    get:
+      tags:
+        - "address"
+      summary: Queries if a key (fingerprint) exists in the history off the given account
+      responses:
+        '200':
+          description: Create or updated address
+    post:
+      tags:
+        - "address"
+      summary: Posts a key (fingerprint) status update
+      responses:
+        '200':
+          description: Create or updated address
+
+  /routing/{hash}:
+    parameters:
+    - name: "hash"
+      in: "path"
+      description: "routing ID to query"
+      required: true
+      example: 323250728593e92f50bf1572d10318912fd611dd0f4e5d36726c0c0757b29e03
+      schema:
+        type: "string"
+
+    get:
+      tags:
+        - "routing"
+      summary: Queries a routing by ID
+      responses:
+        '200':
+          description: Found routing object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoutingOut"
+        '404':
+          description: Routing not found
+
+    post:
+      tags:
+        - "routing"
+      summary: Creates or updates a routing
+      requestBody:
+        description: Routing object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoutingIn"
+      responses:
+        '200':
+          description: Create or updated routing
+        '500':
+          description: Internal error occurred
+        '400':
+          description: Invalid body
+        '401':
+          description: Authentication failed (update only)
+
+    delete:
+      tags:
+        - "routing"
+      summary: Deletes/purges a routing
+      responses:
+        '200':
+          description: Remove/purge a routing ID
+        '500':
+          description: Internal error occurred
+        '404':
+          description: Hash not found
+        '401':
+          description: Authentication failed
+
+  /organisation/{hash}:
+    parameters:
+    - name: "hash"
+      in: "path"
+      description: "hash of the organisation to query"
+      required: true
+      schema:
+        type: "string"
+
+    get:
+      tags:
+        - "organisation"
+      responses:
+        '200':
+          description: Get organisation information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganisationOut"
+    post:
+      tags:
+        - "organisation"
+      responses:
+        '200':
+          description: Create or update organisation
+    delete:
+      tags:
+        - "organisation"
+      responses:
+        '200':
+          description: Remove/purge an organisation
+
+  /organisation/{hash}/delete:
+    parameters:
+    - name: "hash"
+      in: "path"
+      description: "hash of the organisation to query"
+      required: true
+      schema:
+        type: "string"
+    post:
+      tags:
+        - "organisation"
+      responses:
+        '200':
+          description: Deactivate an active organisation
+
+  /organisation/{hash}/undelete:
+    parameters:
+    - name: "hash"
+      in: "path"
+      description: "hash of the organisation to query"
+      required: true
+      schema:
+        type: "string"
+    post:
+      tags:
+        - "organisation"
+      responses:
+        '200':
+          description: Activate a deactivated organisation

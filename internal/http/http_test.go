@@ -37,12 +37,12 @@ const (
 func TestCreateError(t *testing.T) {
 	res := CreateError("foobar", 400)
 	assert.Equal(t, 400, res.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"foobar\"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"foobar\",\"status\": \"error\"}", res.Body)
 	assert.Len(t, res.Headers.Headers, 1)
 
 	res = CreateError("", 501)
 	assert.Equal(t, 501, res.StatusCode)
-	assert.Equal(t, "{\n  \"error\": \"\"\n}", res.Body)
+	assert.JSONEq(t, "{\"message\": \"\",\"status\": \"error\"}", res.Body)
 	assert.Len(t, res.Headers.Headers, 1)
 }
 
