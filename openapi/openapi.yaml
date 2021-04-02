@@ -1,7 +1,7 @@
 openapi: "3.0.2"
 info:
   title: BitMaelum keyresolver API
-  version: "1.0"
+  version: "1.0.1"
 
   x-logo:
     url: "https://bitmaelum.com/logo_and_name.svg"
@@ -155,13 +155,13 @@ components:
           description: Current serial number of the organisation object
 
 tags:
-  - name: "address"
+  - name: "Address operations"
     description: "Operations on address objects"
-  - name: "organisation"
+  - name: "Organisation operations"
     description: "Operations on organisation objects"
-  - name: "routing"
+  - name: "Routing operations"
     description: "Operations on routing objects"
-  - name: "misc"
+  - name: "Miscellaneous"
     description: "Miscellaneous operations"
 
 servers:
@@ -174,7 +174,7 @@ paths:
   /:
     get:
       tags:
-      - "misc"
+      - "Miscellaneous"
       summary: "Retrieves the main index (logo) of the key resolver."
       description:
         This endpoint is for entertainment purposes only.
@@ -185,7 +185,7 @@ paths:
   /config.json:
     get:
       tags:
-        - "misc"
+        - "Miscellaneous"
       summary: "Retrieves the key resolver configuration settings."
       description: |
         The key resolver configuration dictates how certain inputs should adhere to. For now, this means that
@@ -219,7 +219,7 @@ paths:
 
     get:
       tags:
-        - "address"
+        - "Address operations"
       summary: Retrieves information about an address object
       responses:
         '200':
@@ -257,7 +257,7 @@ paths:
 
     post:
       tags:
-        - "address"
+        - "Address operations"
       summary: Creates or updates an address object
       responses:
         '200':
@@ -289,7 +289,7 @@ paths:
 
     delete:
       tags:
-        - "address"
+        - "Address operations"
       summary: Deletes/purges an address object
       responses:
         '200':
@@ -305,7 +305,7 @@ paths:
         type: "string"
     post:
       tags:
-        - "address"
+        - "Address operations"
       summary: Soft-deletes an address object
       responses:
         '200':
@@ -321,7 +321,7 @@ paths:
         type: "string"
     post:
       tags:
-        - "address"
+        - "Address operations"
       summary: Undeletes a soft-deleted address object
       responses:
         '200':
@@ -344,14 +344,14 @@ paths:
 
     get:
       tags:
-        - "address"
+        - "Address operations"
       summary: Queries if a key (fingerprint) exists in the history off the given account
       responses:
         '200':
           description: Create or updated address
     post:
       tags:
-        - "address"
+        - "Address operations"
       summary: Posts a key (fingerprint) status update
       responses:
         '200':
@@ -369,7 +369,7 @@ paths:
 
     get:
       tags:
-        - "routing"
+        - "Routing operations"
       summary: Queries a routing object by ID
       responses:
         '200':
@@ -392,7 +392,7 @@ paths:
 
     post:
       tags:
-        - "routing"
+        - "Routing operations"
       summary: Creates or updates a routing object
       requestBody:
         description: Routing object
@@ -449,7 +449,7 @@ paths:
 
     delete:
       tags:
-        - "routing"
+        - "Routing operations"
       summary: Deletes/purges a routing object
       responses:
         '200':
@@ -508,7 +508,7 @@ paths:
 
     get:
       tags:
-        - "organisation"
+        - "Organisation operations"
       summary: Returns an organisation object
       description: |
         This endpoint will return an organisation object based on its hash. Deactivated organisations cannot be found.
@@ -535,7 +535,7 @@ paths:
                 }
     post:
       tags:
-        - "organisation"
+        - "Organisation operations"
       summary: Create or update an organisation object
       description:
         This call either creates an organisation object, or updates an existing one. When creating an object, no
@@ -546,7 +546,7 @@ paths:
 
     delete:
       tags:
-        - "organisation"
+        - "Organisation operations"
       summary: Purges an organisation object
       description:
         This call will purge an organisation object from the key resolver. It cannot be undone. Once purged, the
@@ -617,7 +617,7 @@ paths:
         type: "string"
     post:
       tags:
-        - "organisation"
+        - "Organisation operations"
       summary: Soft delete an organisation object
       description: |
         An organisation object can be soft-deleted. This will deactivate the organisation and will not found when querying
@@ -638,7 +638,7 @@ paths:
         type: "string"
     post:
       tags:
-        - "organisation"
+        - "Organisation operations"
       summary: Undeletes a soft-deleted organisation object
       description: |
         An organisation object can be restored/activated after it has been deactivated and not yet purged by the resolver.
