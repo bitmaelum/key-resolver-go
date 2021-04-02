@@ -1,7 +1,7 @@
 openapi: "3.0.2"
 info:
   title: BitMaelum keyresolver API
-  version: "1.0"
+  version: "1.0.1"
 
   x-logo:
     url: "https://bitmaelum.com/logo_and_name.svg"

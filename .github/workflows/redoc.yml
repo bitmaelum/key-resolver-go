@@ -1,4 +1,4 @@
-name: Deploy REedoc
+name: Deploy Redoc openAPI documentation
 
 on:
   push:
@@ -13,13 +13,12 @@ jobs:
         run: |
           npm install redoc-cli
           ./node_modules/.bin/redoc-cli bundle openapi/openapi.yaml
-          mkdir deploy
-          cp redoc-static.html deploy/index.html
-      - name: deploy file
-        uses: appleboy/scp-action@master
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
-          source: "deploy/index.html"
-          target: "/home/bitmaelum/domains/api-docs.bitmaelum.com/public_html"
+          name: id_rsa
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+      - name: deploy file
+        run: |
+          scp redoc-static.html ${{ secrets.OPENAPI_DEPLOY_PATH }}/index.html
