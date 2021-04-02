@@ -3,12 +3,22 @@ info:
   title: BitMaelum keyresolver API
   version: "1.0"
 
+  x-logo:
+    url: "https://bitmaelum.com/logo_and_name.svg"
+    backgroundColor: "#FFFFFF"
+    altText: "BitMaelum"
+
+  contact:
+      name: BitMaelum Support
+      url: 'https://www.bitmaelum.com/'
+      email: support@bitmaelum.com
+  license:
+    name: MIT
+    url: 'https://raw.githubusercontent.com/bitmaelum/key-resolver-go/master/LICENSE'
+  description:
+    $ref: introduction.md
+
 components:
-  securitySchemes:
-    name:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
 
     ConfigOut:
@@ -25,9 +35,11 @@ components:
             address:
               type: integer
               example: 27
+              description: The number of bits required for an address object proof of work
             organisation:
               type: integer
               example: 27
+              description: The number of bits required for an organisation object proof of work
 
     GenericResultOut:
       type: object
@@ -39,8 +51,10 @@ components:
           enum:
             - ok
             - error
+          description: Result status. Either ok (success) or error (unsuccessfuly). Note that 200 status code returns CAN respond with an error.
         message:
           type: string
+          description: The error message or any status message that might be important
 
     AddressOut:
       type: object
@@ -53,20 +67,26 @@ components:
         hash:
           type: string
           example: "2244643da7475120bf84d744435d15ea297c36ca165ea0baaa69ec818d0e952f"
+          description: The BitMaelum hash of the address object
         public_key:
           type: string
           example: "rsa MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvzbZbLUcFRy8fii8zZ7KI8X6cUxjD/Duf4wSqi+jMCcxPuZU1/YX8QhDNyVnnutOz/bJJTSLiJt4zuphCDqjf6lhR+wCrB1hZxqwiNbMHM0cdvaScgMj6lS8xboheZ5n39+jtfjdigIxz7DUtGFzzLeGzj3ENRrPEwkmYooCAh3s0PdrHeN461jNrMOJArqd4vJ0VyCr9Vd6fPSN0OoW6ju7NeqynDBbs4iKHcCyDPXrlWY6e3ihCJ6ksw8dNbbA+RlsHHBU7pOk7Myk0T3wTK+/FcmUbjHxaDKJcP0Cao/Hrog3wAYshnGnjdVkK+YfXgeo7o2TU1apzqLJsORTyQIDAQAB"
+          description: The CURRENT public key of the address object
         proof:
           type: string
           example: "27$MmU0NTUxZGU4MDRlMjdhYWNmMjBmOWRmNWJlM2U4Y2QzODRlZDY0NDg4YjIxYWIwNzlmYjU4ZThjOTAwNjhhYg==$180774681"
+          description: The proof of work for the address object
         serial_number:
           type: integer
           example: 1609964031705632800
+          description: Current serial number of the address object
         routing_id:
           type: string
           example: "323250728593e92f50bf1572d10318912fd611dd0f4e5d36726c0c0757b29e03"
+          description: The routing object id for this address object
         redirect_hash:
           type: string
+          description: The hash to which this address object is redirected to in case of a redirected object
 
     RoutingOut:
       type: object
@@ -79,15 +99,19 @@ components:
         hash:
           type: string
           example: "323250728593e92f50bf1572d10318912fd611dd0f4e5d36726c0c0757b29e03"
+          description: The hash of the routing object
         public_key:
           type: string
           example: "ed25519 MCowBQYDK2VwAyEAvGQhl5wUx3F2RunI3dU74atL3kbBTvJg+QkrErEUivk="
+          description: The CURRENT public key of the routing object
         routing:
           type: string
           example: "bitmaelum.noxlogic.nl"
+          description: The actual URL or IP that points to this routing object
         serial_number:
           type: integer
           example: 1607509742876620000
+          description: Current serial number of the routing object
 
     RoutingIn:
       type: object
@@ -98,9 +122,11 @@ components:
         public_key:
           type: string
           example: "ed25519 MCowBQYDK2VwAyEAvGQhl5wUx3F2RunI3dU74atL3kbBTvJg+QkrErEUivk="
+          description: New public key for this routing object
         routing:
           type: string
           example: "bitmaelum.noxlogic.nl"
+          description: New routing URL or IP for this routing object
 
     OrganisationOut:
       type: object
@@ -114,29 +140,35 @@ components:
         hash:
           type: string
           example: "323250728593e92f50bf1572d10318912fd611dd0f4e5d36726c0c0757b29e03"
+          description: The hash of the organisation object
         public_key:
           type: string
           example: "ed25519 MCowBQYDK2VwAyEAvGQhl5wUx3F2RunI3dU74atL3kbBTvJg+QkrErEUivk="
+          description: The CURRENT public key of the organisation object
         proof:
           type: string
-          example: "bitmaelum.noxlogic.nl"
+          example: "27$MmU0NTUxZGU4MDRlMjdhYWNmMjBmOWRmNWJlM2U4Y2QzODRlZDY0NDg4YjIxYWIwNzlmYjU4ZThjOTAwNjhhYg==$180774681"
+          description: The proof of work for the organisation object
         serial_number:
           type: integer
           example: 1607509742876620000
+          description: Current serial number of the organisation object
 
 tags:
+  - name: "address"
+    description: "Operations on address objects"
+  - name: "organisation"
+    description: "Operations on organisation objects"
+  - name: "routing"
+    description: "Operations on routing objects"
   - name: "misc"
     description: "Miscellaneous operations"
-  - name: "address"
-    description: "Operations on addresses"
-  - name: "organisation"
-    description: "Operations on organisations"
-  - name: "routing"
-    description: "Operations on routing"
 
 servers:
   - url: https://resolver.bitmaelum.com
+    description: Live key resolver endpoint
   - url: https://resolver-staging.bitmaelum.com
+    description: Staging key resolver endpoint. This endpoint may contain an incompatible version with the LIVE endpoint, however, it will use the same data store.
 
 paths:
   /:
@@ -144,6 +176,8 @@ paths:
       tags:
       - "misc"
       summary: "Retrieves the main index (logo) of the key resolver."
+      description:
+        This endpoint is for entertainment purposes only.
       responses:
         '200':
           description: Returns the main logo in HTML format
@@ -165,7 +199,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ConfigOut"
               example:
-                value: |-
+                value:
                   {
                     "proof_of_work": {
                       "address": 27,
@@ -173,14 +207,12 @@ paths:
                     }
                   }
 
-
-
   /address/{hash}:
     parameters:
     - name: "hash"
       in: "path"
       example: 2244643da7475120bf84d744435d15ea297c36ca165ea0baaa69ec818d0e952f
-      description: "hash of the address to query"
+      description: "hash of the address object to query"
       required: true
       schema:
         type: "string"
@@ -188,16 +220,16 @@ paths:
     get:
       tags:
         - "address"
-      summary: Retrieves information about an address hash
+      summary: Retrieves information about an address object
       responses:
         '200':
-          description: Found address
+          description: Returns the current address object
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AddressOut"
         '400':
-          description: Incorrect hash address
+          description: Incorrect address hash specified
           content:
             application/json:
               schema:
@@ -207,10 +239,10 @@ paths:
               example:
                 {
                   status: "error",
-                  message: "incorrect hash address"
+                  message: "incorrect address hash"
                 }
         '404':
-          description: Address hash not found
+          description: Address object not found
           content:
             application/json:
               schema:
@@ -220,16 +252,16 @@ paths:
               example:
                 {
                   status: "error",
-                  message: "unauthenticated"
+                  message: "address object not found"
                 }
 
     post:
       tags:
         - "address"
-      summary: Creates or updates an address hash
+      summary: Creates or updates an address object
       responses:
-        '201':
-          description: Created address
+        '200':
+          description: Successfully updated the address object
           content:
             application/json:
               schema:
@@ -239,46 +271,61 @@ paths:
               example:
                 {
                   status: "ok",
-                  message: "hash address created"
+                  message: "address object updated"
                 }
+        '201':
+          description: Successfully created the address object
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenericResultOut'
+              example:
+                {
+                  status: "ok",
+                  message: "address object created"
+                }
+
     delete:
       tags:
         - "address"
-      summary: Deletes/purges an address hash
+      summary: Deletes/purges an address object
       responses:
         '200':
-          description: Address successfully deleted
+          description: Address object successfully deleted
 
   /address/{hash}/delete:
     parameters:
     - name: "hash"
       in: "path"
-      description: "hash of the address to query"
+      description: "hash of the address object to delete"
       required: true
       schema:
         type: "string"
     post:
       tags:
         - "address"
-      summary: Soft-deletes an address hash
+      summary: Soft-deletes an address object
       responses:
         '200':
-          description: Create or updated address
+          description: Address object deleted
+
   /address/{hash}/undelete:
     parameters:
     - name: "hash"
       in: "path"
-      description: "hash of the address to query"
+      description: "hash of the address to undelete"
       required: true
       schema:
         type: "string"
     post:
       tags:
         - "address"
-      summary: Undeletes a soft-deleted address hash
+      summary: Undeletes a soft-deleted address object
       responses:
         '200':
-          description: Create or updated address
+          description: Address object undeleted
 
   /address/{hash}/status/{fingerprint}:
     parameters:
@@ -314,7 +361,7 @@ paths:
     parameters:
     - name: "hash"
       in: "path"
-      description: "routing ID to query"
+      description: "routing object to query"
       required: true
       example: 323250728593e92f50bf1572d10318912fd611dd0f4e5d36726c0c0757b29e03
       schema:
@@ -323,16 +370,16 @@ paths:
     get:
       tags:
         - "routing"
-      summary: Queries a routing by ID
+      summary: Queries a routing object by ID
       responses:
         '200':
-          description: Found routing object
+          description: Returns the routing object
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RoutingOut"
         '404':
-          description: Routing not found
+          description: Routing object not found
           content:
             application/json:
               schema:
@@ -346,7 +393,7 @@ paths:
     post:
       tags:
         - "routing"
-      summary: Creates or updates a routing
+      summary: Creates or updates a routing object
       requestBody:
         description: Routing object
         required: true
@@ -356,7 +403,7 @@ paths:
               $ref: "#/components/schemas/RoutingIn"
       responses:
         '200':
-          description: Create or updated routing
+          description: Created or updated routing object
           content:
             application/json:
               schema:
@@ -403,10 +450,10 @@ paths:
     delete:
       tags:
         - "routing"
-      summary: Deletes/purges a routing
+      summary: Deletes/purges a routing object
       responses:
         '200':
-          description: Remove/purge a routing ID
+          description: Remove/purge a routing object
           content:
             application/json:
               schema:
@@ -428,7 +475,7 @@ paths:
                     message: "internal error occurred"
                   }
         '404':
-          description: Hash not found
+          description: Routing object not found
           content:
             application/json:
               schema:
@@ -454,7 +501,7 @@ paths:
     parameters:
     - name: "hash"
       in: "path"
-      description: "hash of the organisation to query"
+      description: "hash of the organisation object to query"
       required: true
       schema:
         type: "string"
@@ -462,15 +509,19 @@ paths:
     get:
       tags:
         - "organisation"
+      summary: Returns an organisation object
+      description: |
+        This endpoint will return an organisation object based on its hash. Deactivated organisations cannot be found.
+        There is no difference in return values wheter an object is deactivated or simply does not exist.
       responses:
         '200':
-          description: Get organisation information
+          description: Retrieve organisation object
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/OrganisationOut"
         '404':
-          description: Organisation not found
+          description: Organisation object not found
           content:
             application/json:
               schema:
@@ -485,6 +536,10 @@ paths:
     post:
       tags:
         - "organisation"
+      summary: Create or update an organisation object
+      description:
+        This call either creates an organisation object, or updates an existing one. When creating an object, no
+        authentication is needed. When updating an existing object, an authentication token must be present.
       responses:
         '200':
           description: Create or update organisation
@@ -492,9 +547,14 @@ paths:
     delete:
       tags:
         - "organisation"
+      summary: Purges an organisation object
+      description:
+        This call will purge an organisation object from the key resolver. It cannot be undone. Once purged, the
+        organisation is considered available for other users to claim. An organisation object can only be deleted
+        once it has been deactivated. Active organisation objects cannot be purged.
       responses:
         '200':
-          description: Remove/purge an organisation
+          description: Remove/purge an organisation object
           content:
             application/json:
               schema:
@@ -558,6 +618,12 @@ paths:
     post:
       tags:
         - "organisation"
+      summary: Soft delete an organisation object
+      description: |
+        An organisation object can be soft-deleted. This will deactivate the organisation and will not found when querying
+        the object's hash. It will automatically be purged from the system after a (unspecified) number of days. An object
+        can be restored through an undelete request until it's purged. Until that time, the object cannot be taken over by
+        other users.
       responses:
         '500':
           description: Not yet implemented
@@ -573,6 +639,10 @@ paths:
     post:
       tags:
         - "organisation"
+      summary: Undeletes a soft-deleted organisation object
+      description: |
+        An organisation object can be restored/activated after it has been deactivated and not yet purged by the resolver.
+        This allows for correcting accidental mistakes.
       responses:
         '500':
           description: Not yet implemented
