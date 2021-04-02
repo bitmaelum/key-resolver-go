@@ -1,0 +1,23 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate redoc file
+        run: |
+          npm install redoc-cli
+          redoc-cli bundle openapi.yaml
+      - name: deploy file
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          source: "redoc-static.html"
+          target: "/home/bitmaelum/domains/api-docs.bitmaelum.com/public_html/index.html"
