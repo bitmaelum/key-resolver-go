@@ -1,10 +1,11 @@
+# Introduction
 
-# Introdocution
 This is the API documentation for the BitMaelum key resolver service. It contains all operations, input 
 and output for communicating with the key resolver service.
 
 This API is useful when creating your own BitMaelum client or tooling that needs to read or write addresses, 
 organisations or routing information. 
+
 
 
 ## Authentication
@@ -51,7 +52,9 @@ It works in the same way as address or organisation authentication, except it us
     sha256(hash of the routing + serial number of the routing)
 
 
+
 ## Proof of work
+
 In order to create a new organisation or address, you need to do proof-of-work. This proof will be checked when 
 creating the organisation or address in the key resolver. The difficulty level of the proof-of-work depends on the key 
 resolver and will gradually increase over time. To find the current difficulty level, you can get the config.json 
