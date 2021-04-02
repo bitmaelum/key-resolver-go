@@ -74,21 +74,21 @@ func TestAddress(t *testing.T) {
 	pow2 := proofofwork.New(22, "somethingelse", 4231918)
 	res = insertAddressRecord(*addr, "../../testdata/key-3.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
-	assert.Equal(t, 401, res.StatusCode)
+	assert.Equal(t, 400, res.StatusCode)
 	assert.Contains(t, res.Body, "incorrect proof-of-work")
 
 	// Insert with incorrect proof-of-work
 	pow2 = proofofwork.New(22, "somethingelse", 1111111)
 	res = insertAddressRecord(*addr, "../../testdata/key-3.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
-	assert.Equal(t, 401, res.StatusCode)
+	assert.Equal(t, 400, res.StatusCode)
 	assert.Contains(t, res.Body, "incorrect proof-of-work")
 
 	// Insert with too small proof of work
 	pow2 = proofofwork.New(3, addr.Hash().String(), 16)
 	res = insertAddressRecord(*addr, "../../testdata/key-4.json", fakeRoutingId.String(), pow2, "")
 	assert.NotNil(t, res)
-	assert.Equal(t, 401, res.StatusCode)
+	assert.Equal(t, 400, res.StatusCode)
 	assert.Contains(t, res.Body, "proof-of-work too weak (need 5 bits)")
 
 	// Insert new hash

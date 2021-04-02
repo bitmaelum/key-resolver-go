@@ -281,7 +281,7 @@ func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Respo
 
 	// Check minimum number of work bits
 	if uploadBody.Proof.Bits < MinimumProofBitsAddress {
-		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", MinimumProofBitsAddress), 401)
+		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", MinimumProofBitsAddress), 400)
 	}
 
 	repo := address.GetResolveRepository()
