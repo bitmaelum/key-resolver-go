@@ -1,8 +1,8 @@
-name: Deploy to Staging
+name: Deploy REedoc
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ master, redoc ]
 
 jobs:
   build:
