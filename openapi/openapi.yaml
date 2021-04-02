@@ -157,7 +157,7 @@ components:
 tags:
   - name: "Address operations"
     description: "Operations on address objects"
-- name: "Organisation operations"
+  - name: "Organisation operations"
     description: "Operations on organisation objects"
   - name: "Routing operations"
     description: "Operations on routing objects"
