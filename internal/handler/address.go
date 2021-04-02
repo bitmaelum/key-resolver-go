@@ -276,12 +276,12 @@ func updateAddress(uploadBody addressUploadBody, req http.Request, current *addr
 func createAddress(addrHash hash.Hash, uploadBody addressUploadBody) *http.Response {
 	// Validate proof of work
 	if !uploadBody.Proof.IsValid() || uploadBody.Proof.Data != addrHash.String() {
-		return http.CreateError("incorrect proof-of-work", 401)
+		return http.CreateError("incorrect proof-of-work", 400)
 	}
 
 	// Check minimum number of work bits
 	if uploadBody.Proof.Bits < MinimumProofBitsAddress {
-		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", MinimumProofBitsAddress), 401)
+		return http.CreateError(fmt.Sprintf("proof-of-work too weak (need %d bits)", MinimumProofBitsAddress), 400)
 	}
 
 	repo := address.GetResolveRepository()
